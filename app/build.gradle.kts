@@ -40,8 +40,8 @@ android {
         compose = true
     }
 
-    // 一期不声明 INTERNET：纯单机、离线字体、无广告 SDK，最小化权限面。
-    // 二期链接下载功能上线时再补 INTERNET / ACCESS_NETWORK_STATE。
+    // 纯单机：不声明 INTERNET / ACCESS_NETWORK_STATE，最小化权限面。
+    // 二期 04 链接下载经版权合规评估改为「导入本地文件」，不引入任何网络库。
 }
 
 dependencies {
@@ -67,6 +67,8 @@ dependencies {
     implementation(libs.media3.common)
     implementation(libs.media3.datasource)
     implementation(libs.media3.extractor)
+    // 二期：音频裁剪 / 视频提取音频（ClippingConfiguration / setRemoveVideo），版本与播放链路一致。
+    implementation(libs.media3.transformer)
 
     // 封面：Coil 3 已换 group 为 io.coil-kt.coil3；不需要 coil-network-okhttp（一期无网络图片）。
     implementation(libs.coil.compose)

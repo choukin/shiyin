@@ -2,7 +2,8 @@
 # 核实日期：2026-11-13；来源：Google Maven / Maven Central maven-metadata.xml、kotlinlang.org
 # 规则：androidx.compose.* 由 BOM 统一管理，[libraries] 中不写 version。
 # 规则：Compose Compiler 插件版本与 Kotlin 共用同一 version.ref，不要单独锁。
-# 规则：二期坐标只在此登记注释，不写入 [libraries]，避免一期误引入。
+# 规则：依赖统一在此登记；media3 各模块必须共用 version.ref = "media3"，避免 ABI 错配。
+# 二期已启用 media3-transformer（05 裁剪 / 06 提取音频），04 改为本地导入，不引网络库。
 
 [versions]
 agp = "9.5.1"
@@ -45,6 +46,8 @@ media3-session = { group = "androidx.media3", name = "media3-session", version.r
 media3-common = { group = "androidx.media3", name = "media3-common", version.ref = "media3" }
 media3-datasource = { group = "androidx.media3", name = "media3-datasource", version.ref = "media3" }
 media3-extractor = { group = "androidx.media3", name = "media3-extractor", version.ref = "media3" }
+# 二期：音频裁剪 / 视频提取音频，与播放链路共用 media3 = 1.11.1
+media3-transformer = { group = "androidx.media3", name = "media3-transformer", version.ref = "media3" }
 
 # ---- 封面 / 轻量持久化 / 异步 ----
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil3" }
@@ -55,10 +58,11 @@ kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 # ---- 测试 ----
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 
-# ---- 二期预留：仅登记，不写入 [libraries]，一期零引入 ----
-# androidx.media3:media3-transformer / media3-muxer / media3-inspector : 1.11.1  → 音频裁剪、视频提取音频
-# com.squareup.okhttp3:okhttp / androidx.work:work-runtime-ktx                  → 链接下载（需先解决版权合规）
-# androidx.compose.ui:ui-test-junit4 / ui-test-manifest                         → Compose 组件测试
+# ---- 二期状态 ----
+# 已落地：androidx.media3:media3-transformer 1.11.1 → 05 音乐裁剪 / 06 视频提取音频
+# 已决策：04 链接下载改为「导入本地文件」（版权合规），不引 OkHttp / WorkManager / INTERNET
+# 预留：FOREGROUND_SERVICE_MEDIA_PROCESSING + mediaProcessing FGS（P2，需处理 6h/天配额）
+# 预留：androidx.compose.ui:ui-test-junit4 / ui-test-manifest → Compose 组件测试
 # 禁用：com.arthenica:ffmpeg-kit-*（已退役、Maven 二进制下架）
 # 禁用：com.google.accompanist:accompanist-permissions（改用 activity-compose 的 ActivityResultContracts）
 # 不引入：Hilt / Koin / Room / KSP / Accompanist / material-icons-extended / ui-text-google-fonts

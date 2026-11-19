@@ -3,6 +3,8 @@ package com.shiyin.player.di
 import android.content.Context
 import com.shiyin.player.data.local.AlbumArtResolver
 import com.shiyin.player.data.local.MediaStoreAudioDataSource
+import com.shiyin.player.data.media.MediaEditRepository
+import com.shiyin.player.data.media.WaveformExtractor
 import com.shiyin.player.data.prefs.ShiyinPreferences
 import com.shiyin.player.data.repository.LibraryRepository
 import com.shiyin.player.playback.PlayerController
@@ -22,4 +24,8 @@ class AppContainer(context: Context) {
         LibraryRepository(audioDataSource, preferences)
     }
     val playerController: PlayerController by lazy { PlayerController(appContext) }
+
+    // 二期：纯本地的波形提取与媒体编辑/导入管线（零网络）。
+    val waveformExtractor: WaveformExtractor by lazy { WaveformExtractor(appContext) }
+    val mediaEditRepository: MediaEditRepository by lazy { MediaEditRepository(appContext) }
 }
