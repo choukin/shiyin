@@ -24,6 +24,12 @@ sealed interface ExportState {
 enum class ExtractMode { WHOLE, RANGE }
 
 /**
+ * 错误类型用枚举而非裸字符串：所有 UI 文案集中在 strings.xml，
+ * ViewModel 不持有 Context、不硬编码中文。
+ */
+enum class EditorError { NO_SOURCE, NO_AUDIO, PROBE_FAILED, EXPORT_FAILED }
+
+/**
  * 05 音乐裁剪 / 06 视频提取音频共用状态。
  * 两者管线相同（Media3 Transformer + ClippingConfiguration），仅 removeVideo 与 mode 不同。
  */
@@ -34,12 +40,12 @@ data class EditorUiState(
     val mode: ExtractMode = ExtractMode.WHOLE,
     val exportState: ExportState = ExportState.Idle,
     val isProbing: Boolean = false,
-    val error: String? = null
+    val error: EditorError? = null
 )
 
 /** 04 导入本地文件（版权合规替代方案）状态。 */
 data class ImportUiState(
     val fileName: String? = null,
     val exportState: ExportState = ExportState.Idle,
-    val error: String? = null
+    val error: EditorError? = null
 )

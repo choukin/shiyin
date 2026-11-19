@@ -14,8 +14,8 @@
     <!-- 媒体会话通知对该权限豁免：被拒时播放仍继续，仅通知呈现受限。非阻塞请求。 -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- 一期不声明 INTERNET / ACCESS_NETWORK_STATE：纯单机、离线字体、无广告 SDK。 -->
-    <!-- 二期随链接下载功能再补 INTERNET / ACCESS_NETWORK_STATE / FOREGROUND_SERVICE_MEDIA_PROCESSING。 -->
+    <!-- 纯单机：不声明 INTERNET / ACCESS_NETWORK_STATE。04 二期已按版权合规改为「导入本地文件」，不引入网络库。 -->
+    <!-- 暂不声明 FOREGROUND_SERVICE_MEDIA_PROCESSING：本期导出在页面协程内完成，P2 接后台转码时再评估 FGS。 -->
 
     <application
         android:name=".ShiyinApp"

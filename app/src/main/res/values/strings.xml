@@ -7,7 +7,8 @@
     <string name="recently_added">最近添加</string>
     <string name="ad_label">广告</string>
     <string name="scan_local">扫描本机</string>
-    <string name="link_download">链接下载</string>
+    <!-- 04 二期按版权合规改为「导入本地文件」；name 保持设计稿约定不变 -->
+    <string name="link_download">导入本地文件</string>
     <string name="music_trim">音乐裁剪</string>
     <string name="extract_audio">视频提取音频</string>
     <string name="feature_phase_two">二期开放</string>
@@ -45,14 +46,37 @@
     <string name="player_now_playing">正在播放</string>
     <string name="player_no_track">还没有选择歌曲</string>
 
-    <!-- 04 / 05 / 06 二期占位（零广告） -->
-    <string name="placeholder_link_body">粘贴链接即可把音频保存到本机。该功能计划在二期开放。</string>
-    <string name="placeholder_link_error_demo">链接解析失败（设计示意，非产品功能）</string>
-    <string name="placeholder_trim_body">在波形上选择片段，导出为新的音频文件。该功能计划在二期开放。</string>
-    <string name="placeholder_trim_export_demo">导出成功（设计示意，非产品功能）</string>
-    <string name="placeholder_extract_body">从视频中整段或按所选片段提取音频。该功能计划在二期开放。</string>
-    <string name="placeholder_extract_whole">整段提取</string>
-    <string name="placeholder_extract_range">所选片段</string>
+    <!-- 04 导入本地文件（二期合规实现，零网络） -->
+    <string name="import_body">从本机选择音频文件加入曲库。拾音不解析链接、不联网、不下载任何内容。</string>
+    <string name="import_notice">版权提示：请仅导入你自有或已获授权的本机文件。</string>
+    <string name="import_running">正在导入…</string>
+    <string name="import_success">已导入 %1$s 到音乐库</string>
+    <string name="import_error">导入失败，请确认文件可读后重试</string>
+
+    <!-- 05 音乐裁剪 / 06 视频提取音频（二期真实实现，共用工作区） -->
+    <string name="trim_body">选择本机音频，在真实波形上拖动滑块选取片段，导出为新的 m4a 文件并保存到音乐库。</string>
+    <string name="extract_body">选择本机视频，按整段或所选片段提取音频，导出为 m4a 文件并保存到音乐库。</string>
+    <string name="editor_pick_audio">选择音频文件</string>
+    <string name="editor_pick_video">选择视频文件</string>
+    <string name="editor_no_source">还没有选择文件</string>
+    <string name="editor_source_label">已选择：%1$s</string>
+    <string name="editor_duration">时长 %1$s</string>
+    <string name="editor_duration_unknown">未知</string>
+    <string name="editor_range_label">选择片段</string>
+    <string name="editor_range_hint">拖动两端滑块选择要保留的区间</string>
+    <string name="editor_start">起点 %1$s</string>
+    <string name="editor_end">终点 %1$s</string>
+    <string name="editor_no_duration">无法读取时长，将按整段导出</string>
+    <string name="editor_mode_whole">整段提取</string>
+    <string name="editor_mode_range">所选片段</string>
+    <string name="editor_export">导出音频</string>
+    <string name="editor_exporting">正在导出…</string>
+    <string name="editor_export_success">已导出 %1$s 到音乐库</string>
+    <string name="editor_result_dismiss">知道了</string>
+    <string name="editor_error_no_source">请先选择文件</string>
+    <string name="editor_error_no_audio">所选文件没有音频轨道</string>
+    <string name="editor_error_probe_failed">无法读取所选文件，请换一个文件重试</string>
+    <string name="editor_error_export_failed">导出失败，请换一个文件重试</string>
 
     <!-- 08 广告位规范与设计说明（只读静态页） -->
     <string name="design_notes_title">广告位规范与设计说明</string>
@@ -70,10 +94,10 @@
     <string name="design_notes_states">待补充状态</string>
     <string name="design_notes_state_empty">空曲库引导（一期真实实现）</string>
     <string name="design_notes_state_permission">无存储权限（一期真实实现）</string>
-    <string name="design_notes_state_link_error">链接解析失败（二期静态示意）</string>
-    <string name="design_notes_state_export">导出成功提示（二期静态示意）</string>
+    <string name="design_notes_state_link_error">链接解析失败 → 04 改为本地导入，不再解析链接</string>
+    <string name="design_notes_state_export">导出成功提示（二期真实实现）</string>
     <string name="design_notes_license_title">字体许可</string>
     <string name="design_notes_license">Noto Sans SC / Geist Mono 均为 SIL OFL 1.1；许可原文待补入 docs/licenses/，字体二进制待补入 res/font/。</string>
     <string name="design_notes_copyright_title">版权合规</string>
-    <string name="design_notes_copyright">链接下载涉及版权授权，二期启动前必须先确认来源合法，或改为导入本地文件。</string>
+    <string name="design_notes_copyright">04 原设计为链接下载，因涉及版权授权与平台条款，二期按合规替代路径改为「导入本地文件」：不声明 INTERNET、不解析链接、不下载网络内容。</string>
 </resources>

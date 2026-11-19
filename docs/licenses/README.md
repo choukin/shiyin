@@ -18,3 +18,14 @@
 5. 保留 `FontFamily.Default` / `FontFamily.Monospace` 作为字体加载失败时的兜底链。
 
 任何第三方图标 / 矢量素材若后续引入，同样在此登记来源与许可。
+
+## 二期新增依赖登记（2026-11-19）
+
+| 依赖 | 版本 | 用途 | 许可 |
+|---|---|---|---|
+| `androidx.media3:media3-transformer` | 1.11.1 | 05 音乐裁剪 / 06 视频提取音频 | Apache License 2.0（AndroidX / AOSP） |
+| `androidx.media3:media3-muxer`（传递依赖） | 1.11.1 | Transformer 内部封装输出 | Apache License 2.0 |
+
+说明：Media3 全部模块共用 `version.ref = "media3"`，避免 ABI 错配；未引入 ffmpeg-kit（已退役）、
+未引入任何网络库或广告 SDK。Apache-2.0 要求随分发保留 NOTICE，发布前需核对 AAR 内 `NOTICE` 文件
+是否需要随 APK 附随（当前为内部测试构建，未做发布打包）。

@@ -1,44 +1,56 @@
 package com.shiyin.player.ui.screens
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import com.shiyin.player.R
-import com.shiyin.player.ui.components.FeaturePlaceholderScreen
-import com.shiyin.player.ui.components.WaveformPlaceholder
-import com.shiyin.player.ui.theme.ProvisionalDimens
-import com.shiyin.player.ui.theme.ShiyinTheme
+import com.shiyin.player.data.model.EditorUiState
+import com.shiyin.player.ui.components.EditorWorkspace
+import com.shiyin.player.ui.components.ShiyinScaffold
 
-/** 05 音乐裁剪：一期占位（静态波形柱条 + 导出成功静态示意），零广告。 */
+/**
+ * 05 音乐裁剪（二期真实实现）：SAF 选本地音频 → 真实 PCM 波形 →
+ * RangeSlider 选区 → Media3 Transformer clipping → 写入音乐库。
+ * 零广告、零网络。
+ */
 @Composable
 fun MusicTrimScreen(
+    state: EditorUiState,
+    onSourceSelected: (Uri?) -> Unit,
+    onRangeChange: (Long, Long) -> Unit,
+    onExport: () -> Unit,
+    onResetExport: () -> Unit,
+    onConsumeError: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    FeaturePlaceholderScreen(
+    val picker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri -> onSourceSelected(uri) }
+
+    ShiyinScaffold(
         title = stringResource(R.string.music_trim),
-        body = stringResource(R.string.placeholder_trim_body),
-        badge = stringResource(R.string.feature_phase_two),
-        demoLabel = stringResource(R.string.placeholder_trim_export_demo),
         onBack = onBack,
-        modifier = modifier,
-        extra = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                WaveformPlaceholder()
-                Spacer(modifier = Modifier.height(ProvisionalDimens.ItemVerticalSpacing))
-                WaveformPlaceholder()
-            }
-        }
-    )
+        modifier = modifier
+    ) { padding ->
+        EditorWorkspace(
+            state = state,
+            body = stringResource(R.string.trim_body),
+            pickLabel = stringResource(R.string.editor_pick_audio),
+            showModeSelector = false,
+            onPick = { picker.launch(arrayOf(MIME_AUDIO)) },
+            onRangeChange = onRangeChange,
+            onModeChange = {},
+            onExport = onExport,
+            onResetExport = onResetExport,
+            onConsumeError = onConsumeError,
+            modifier = Modifier.padding(padding)
+        )
+    }
 }
 
-@Preview(showBackground = true, widthDp = 390, heightDp = 844)
-@Composable
-private fun MusicTrimScreenPreview() {
-    ShiyinTheme { MusicTrimScreen(onBack = {}) }
-}
+private const val MIME_AUDIO = "audio/*"

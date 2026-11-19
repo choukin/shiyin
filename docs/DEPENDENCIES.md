@@ -54,21 +54,34 @@
 | 矢量素材 | Compose `Canvas` + `Brush` 自绘 + 少量 vector drawable，**不引 SVG 渲染库/波形库** | 设计稿的 SVG 是设计元素，Android 不吃 SVG；渐变用 `Brush` 更贴近且零依赖 |
 | 广告 | **零 SDK**；曲库页为本地可关闭占位条 | 按已确认决策，一期不接真实广告、不请求网络 |
 
-## 3. 明确不引入 / 二期预留
+## 3. 二期落地与仍预留
 
-**一期零引入**：`media3-ui`、`media3-ui-compose`、各流媒体/软解码扩展、`material-icons-extended`（少量图标自绘）、`ui-text-google-fonts`、`coil-network-okhttp`、`coil-svg`、Room、Hilt、Koin、KSP、Accompanist、`material3-adaptive`、Robolectric、Espresso、任何广告 SDK。
-**一期 Manifest 不声明 `INTERNET`**（纯单机，最小化权限面）。
+**仍不引入**：`media3-ui`、`media3-ui-compose`、各流媒体/软解码扩展、`material-icons-extended`、`ui-text-google-fonts`、`coil-network-okhttp`、`coil-svg`、Room、Hilt、Koin、KSP、Accompanist、`material3-adaptive`、Robolectric、Espresso、任何广告 SDK、任何网络库。
+**Manifest 仍不声明 `INTERNET` / `ACCESS_NETWORK_STATE`**：04 已改为本地导入，纯单机定位与最小权限面不变。
 
-**二期才引入**：
+**二期已落地（2026-11-19，本机 `./gradlew :app:assembleDebug :app:testDebugUnitTest` 实测通过）**：
+
+| 功能 | 依赖 / API | 落地方式 |
+|---|---|---|
+| 音乐裁剪（05） | `androidx.media3:media3-transformer:1.11.1` | `MediaItem.ClippingConfiguration.Builder.setStartPositionMs/setEndPositionMs` |
+| 视频提取音频（06） | 同上 | `EditedMediaItem.Builder(...).setRemoveVideo(true)` |
+| 真实 PCM 波形 | `android.media.MediaCodec` 解码 RMS | `WaveformExtractor`，解码失败降级到一期静态波形 |
+| 本地导入（04） | SAF `ActivityResultContracts.OpenDocument` | 版权合规替代方案，不解析链接、不联网 |
+| 导出 | MediaStore `Audio.Media` + `IS_PENDING` | 写入 `Music/Shiyin`，完成后清 pending，曲库立即可见 |
+
+> **API 实测更正**：Media3 1.11.1 的 `Transformer.Listener` 是 default 方法
+> `onCompleted(Composition, ExportResult)` / `onError(Composition, ExportResult, ExportException)`；
+> 早期文档假设的 `TransformationException` 在该版本**不存在**。
+> `media3-muxer` 由 transformer 传递引入，无需显式声明；`media3-inspector` 未使用。
+
+**仍预留**：
 
 | 功能 | 依赖 / API | 说明 |
 |---|---|---|
-| 音乐裁剪（05 屏） | `androidx.media3:media3-transformer`（+ `media3-muxer` / `media3-inspector`） | `MediaItem.ClippingConfiguration(startPositionMs, endPositionMs)` |
-| 视频提取音频（06 屏） | 同上 | `EditedMediaItem.Builder(...).setRemoveVideo(true)`，配合 clipping 取片段 |
-| 转码前台服务 | `FOREGROUND_SERVICE_MEDIA_PROCESSING` | `mediaProcessing` 类型，每天累计 6h 上限，完成需主动 `stopForeground()+stopSelf()` |
-| 链接下载（04 屏） | OkHttp（+ 可选 WorkManager / Retrofit）、`INTERNET`、`ACCESS_NETWORK_STATE` | **启动前必须先解决版权合规**，否则改为「导入本地文件」或砍掉 |
-| 导出/分享 | `FileProvider` + SAF `ACTION_CREATE_DOCUMENT` | 与「导出成功提示」态配套 |
+| 转码前台服务（P2） | `FOREGROUND_SERVICE_MEDIA_PROCESSING` | `mediaProcessing` 类型，6h/天配额，完成需主动 stop |
+| 分享 / 自定义导出位置 | `FileProvider` + SAF `ACTION_CREATE_DOCUMENT` | 本期导出走 MediaStore，已满足「导出成功」态 |
 | Compose 组件测试 | `ui-test-junit4` / `ui-test-manifest` | 需 instrumented 环境 |
+| 04 网络版链接下载 | OkHttp / `INTERNET` | **不做**：版权合规未通过，已永久改为本地导入 |
 
 **禁用**：
 - `com.arthenica:ffmpeg-kit-*` —— 已正式退役，Maven Central 二进制按计划下架（<6.0 于 2025-02-01、6.0 于 2025-04-01）；续作 FFmpegKitNext 为 source-only，需自行编译 NDK。**新项目不得作为依赖**，裁剪/提取统一走 Media3 Transformer。
@@ -91,9 +104,9 @@
 
 | 风险 | 缓解 |
 |---|---|
-| 版本组合未实测（本机无 SDK） | 批次 A 先只交骨架，以用户侧 Sync 通过为准；以 AS 官方模板生成的骨架为基座，不强行覆盖模板默认版本 |
-| `compileSdk 37` 需 Android 17 平台 | BUILD.md 写明 SDK Manager 安装 API 37 + Build Tools 36.0.0；若暂未安装，先与模板默认值对齐再升级 |
-| 链接下载版权 | 一期只占位、不写下载代码、不声明 `INTERNET`；二期启动前确认来源合法 |
+| 版本组合 | **已实测**：Mac + JDK 17 + Gradle 9.6.0 + AGP 9.5.1 + Kotlin 2.4.21 下 `assembleDebug` / `testDebugUnitTest` 全通过；API 36 模拟器已装包验收 |
+| `compileSdk 37` 需 Android 17 平台 | 本机已装 `platforms/android-37.0`；`BUILD.md` 中「本机无 SDK/Gradle」为批次 A 旧描述，已过时 |
+| 链接下载版权 | **已决策（2026-11-19）**：04 永久改为「导入本地文件」，不声明 `INTERNET`、不引入网络库 |
 | 字体体积/授权 | Noto Sans SC 全字集数 MB～十几 MB，只取 2–3 字重或子集化；OFL LICENSE 放 `docs/licenses/` |
 | MediaStore 封面机型差异 | `AlbumArtResolver` 统一兜底渐变封面；Coil 配 placeholder/error；不阻塞列表 |
 | 二期 KSP 版本耦合 | 一期手动 DI + DataStore 完全绕开；二期上 Hilt/Room 时单独做版本矩阵验收 |

@@ -13,11 +13,14 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.shiyin.player.data.model.ExtractMode
 import com.shiyin.player.data.model.PermissionState
 import com.shiyin.player.data.permission.Permissions
 import com.shiyin.player.di.AppContainer
 import com.shiyin.player.ui.screens.DesignNotesScreen
+import com.shiyin.player.ui.screens.EditorViewModel
 import com.shiyin.player.ui.screens.ExtractAudioScreen
+import com.shiyin.player.ui.screens.ImportViewModel
 import com.shiyin.player.ui.screens.LibraryScreen
 import com.shiyin.player.ui.screens.LibraryViewModel
 import com.shiyin.player.ui.screens.LinkDownloadScreen
@@ -154,19 +157,72 @@ fun ShiyinNavHost(
             )
         }
 
+        // 04：版权合规替代方案，SAF 选本机音频导入曲库，零网络。
         composable(Routes.LINK_DOWNLOAD) {
             assertAdFree(Routes.LINK_DOWNLOAD)
-            LinkDownloadScreen(onBack = { navController.popBackStack() })
+            val vm: ImportViewModel = viewModel(
+                factory = viewModelFactory<ImportViewModel> {
+                    ImportViewModel(container.mediaEditRepository)
+                }
+            )
+            val state by vm.uiState.collectAsStateWithLifecycle()
+            LinkDownloadScreen(
+                state = state,
+                onImport = vm::import,
+                onReset = vm::reset,
+                onConsumeError = vm::consumeError,
+                onBack = { navController.popBackStack() }
+            )
         }
 
+        // 05 / 06 共用 EditorViewModel，仅 removeVideo 与默认模式不同。
         composable(Routes.TRIM) {
             assertAdFree(Routes.TRIM)
-            MusicTrimScreen(onBack = { navController.popBackStack() })
+            val vm: EditorViewModel = viewModel(
+                factory = viewModelFactory<EditorViewModel> {
+                    EditorViewModel(
+                        repository = container.mediaEditRepository,
+                        waveformExtractor = container.waveformExtractor,
+                        removeVideo = false,
+                        defaultMode = ExtractMode.RANGE
+                    )
+                }
+            )
+            val state by vm.uiState.collectAsStateWithLifecycle()
+            MusicTrimScreen(
+                state = state,
+                onSourceSelected = vm::onSourceSelected,
+                onRangeChange = vm::onRangeChange,
+                onExport = vm::export,
+                onResetExport = vm::resetExportState,
+                onConsumeError = vm::consumeError,
+                onBack = { navController.popBackStack() }
+            )
         }
 
         composable(Routes.EXTRACT) {
             assertAdFree(Routes.EXTRACT)
-            ExtractAudioScreen(onBack = { navController.popBackStack() })
+            val vm: EditorViewModel = viewModel(
+                factory = viewModelFactory<EditorViewModel> {
+                    EditorViewModel(
+                        repository = container.mediaEditRepository,
+                        waveformExtractor = container.waveformExtractor,
+                        removeVideo = true,
+                        defaultMode = ExtractMode.WHOLE
+                    )
+                }
+            )
+            val state by vm.uiState.collectAsStateWithLifecycle()
+            ExtractAudioScreen(
+                state = state,
+                onSourceSelected = vm::onSourceSelected,
+                onRangeChange = vm::onRangeChange,
+                onModeChange = vm::onModeChange,
+                onExport = vm::export,
+                onResetExport = vm::resetExportState,
+                onConsumeError = vm::consumeError,
+                onBack = { navController.popBackStack() }
+            )
         }
 
         composable(Routes.PLAYER) {
