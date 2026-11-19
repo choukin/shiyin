@@ -40,8 +40,8 @@ android {
         compose = true
     }
 
-    // 纯单机：不声明 INTERNET / ACCESS_NETWORK_STATE，最小化权限面。
-    // 二期 04 链接下载经版权合规评估改为「导入本地文件」，不引入任何网络库。
+    // 04 链接下载需要 INTERNET / ACCESS_NETWORK_STATE；除此之外无网络行为，
+    // 封面仍只加载 MediaStore 的 content:// URI，不引 Coil 网络层。
 }
 
 dependencies {
@@ -70,7 +70,10 @@ dependencies {
     // 二期：音频裁剪 / 视频提取音频（ClippingConfiguration / setRemoveVideo），版本与播放链路一致。
     implementation(libs.media3.transformer)
 
-    // 封面：Coil 3 已换 group 为 io.coil-kt.coil3；不需要 coil-network-okhttp（一期无网络图片）。
+    // 04 链接下载：OkHttp 5.x，只用于用户显式粘贴的音/视频直链 GET。
+    implementation(libs.okhttp)
+
+    // 封面：Coil 3 已换 group 为 io.coil-kt.coil3；不需要 coil-network-okhttp（封面只走 content://）。
     implementation(libs.coil.compose)
 
     implementation(libs.androidx.datastore.preferences)

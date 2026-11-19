@@ -42,10 +42,3 @@ data class EditorUiState(
     val isProbing: Boolean = false,
     val error: EditorError? = null
 )
-
-/** 04 导入本地文件（版权合规替代方案）状态。 */
-data class ImportUiState(
-    val fileName: String? = null,
-    val exportState: ExportState = ExportState.Idle,
-    val error: EditorError? = null
-)

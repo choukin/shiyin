@@ -7,8 +7,8 @@
     <string name="recently_added">最近添加</string>
     <string name="ad_label">广告</string>
     <string name="scan_local">扫描本机</string>
-    <!-- 04 二期按版权合规改为「导入本地文件」；name 保持设计稿约定不变 -->
-    <string name="link_download">导入本地文件</string>
+    <!-- 04 二期恢复设计稿原名「链接下载」，name 保持设计稿约定不变 -->
+    <string name="link_download">链接下载</string>
     <string name="music_trim">音乐裁剪</string>
     <string name="extract_audio">视频提取音频</string>
     <string name="feature_phase_two">二期开放</string>
@@ -46,12 +46,27 @@
     <string name="player_now_playing">正在播放</string>
     <string name="player_no_track">还没有选择歌曲</string>
 
-    <!-- 04 导入本地文件（二期合规实现，零网络） -->
-    <string name="import_body">从本机选择音频文件加入曲库。拾音不解析链接、不联网、不下载任何内容。</string>
-    <string name="import_notice">版权提示：请仅导入你自有或已获授权的本机文件。</string>
-    <string name="import_running">正在导入…</string>
-    <string name="import_success">已导入 %1$s 到音乐库</string>
-    <string name="import_error">导入失败，请确认文件可读后重试</string>
+    <!-- 04 链接下载（二期真实实现：直链下载为主，SAF 本地导入为次要入口） -->
+    <string name="link_download_body">粘贴音频或视频文件的直链地址，拾音会下载并保存到本机音乐库。支持 mp3 / m4a / wav / flac / ogg / mp4 等常见格式。</string>
+    <string name="link_download_notice">仅处理直接指向媒体文件的 http(s) 地址；不解析网页、不嗅探页面内的媒体地址、不上传任何内容。</string>
+    <string name="link_download_label">文件直链</string>
+    <string name="link_download_hint">https://example.com/song.mp3</string>
+    <string name="link_download_action">下载到曲库</string>
+    <string name="link_download_progress">已下载 %1$d%%</string>
+    <string name="link_download_progress_unknown">正在下载（文件大小未知）</string>
+    <string name="link_download_cancel">取消下载</string>
+    <string name="link_download_success">已保存 %1$s 到音乐库</string>
+    <string name="link_download_detail">技术信息：%1$s</string>
+    <string name="link_download_import_section">没有直链？也可以从本机选择音频文件直接导入曲库。</string>
+    <string name="link_error_invalid_url">地址无效，请输入以 http:// 或 https:// 开头的文件直链</string>
+    <string name="link_error_no_network">当前没有网络连接，请检查后重试</string>
+    <string name="link_error_request_failed">下载失败，请检查地址是否可访问</string>
+    <string name="link_error_http">服务器返回错误，请检查地址是否正确</string>
+    <string name="link_error_unsupported">该地址不是音频或视频文件（可能返回了网页）</string>
+    <string name="link_error_too_large">文件超过 300 MB，已停止下载</string>
+    <string name="link_error_empty">下载内容为空，请检查地址</string>
+    <string name="link_error_write_failed">保存到音乐库失败，请重试</string>
+    <string name="link_error_import_failed">导入失败，请确认文件可读后重试</string>
 
     <!-- 05 音乐裁剪 / 06 视频提取音频（二期真实实现，共用工作区） -->
     <string name="trim_body">选择本机音频，在真实波形上拖动滑块选取片段，导出为新的 m4a 文件并保存到音乐库。</string>
@@ -94,10 +109,10 @@
     <string name="design_notes_states">待补充状态</string>
     <string name="design_notes_state_empty">空曲库引导（一期真实实现）</string>
     <string name="design_notes_state_permission">无存储权限（一期真实实现）</string>
-    <string name="design_notes_state_link_error">链接解析失败 → 04 改为本地导入，不再解析链接</string>
+    <string name="design_notes_state_link_error">下载失败提示（二期真实实现：无效地址 / HTTP 错误 / 非媒体内容 / 无网络）</string>
     <string name="design_notes_state_export">导出成功提示（二期真实实现）</string>
     <string name="design_notes_license_title">字体许可</string>
     <string name="design_notes_license">Noto Sans SC / Geist Mono 均为 SIL OFL 1.1；许可原文待补入 docs/licenses/，字体二进制待补入 res/font/。</string>
-    <string name="design_notes_copyright_title">版权合规</string>
-    <string name="design_notes_copyright">04 原设计为链接下载，因涉及版权授权与平台条款，二期按合规替代路径改为「导入本地文件」：不声明 INTERNET、不解析链接、不下载网络内容。</string>
+    <string name="design_notes_copyright_title">链接下载说明</string>
+    <string name="design_notes_copyright">04 链接下载仅对用户显式粘贴的媒体直链发起 GET：不解析第三方平台页面、不嗅探媒体地址、不上传数据。为此新增 INTERNET / ACCESS_NETWORK_STATE 权限，其余页面仍为纯本地实现。</string>
 </resources>

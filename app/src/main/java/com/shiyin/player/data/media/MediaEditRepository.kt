@@ -26,7 +26,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 
 /**
- * 二期的媒体编辑与导入管线，全部本地、零网络。
+ * 二期的媒体编辑与入库管线。
  *
  * - [probe]：用 MediaExtractor 读取时长与轨道信息（不解码）。
  * - [exportAudio]：Media3 Transformer 1.11.1。裁剪走
@@ -34,8 +34,9 @@ import kotlinx.coroutines.withContext
  *   [EditedMediaItem.Builder.setRemoveVideo]；输出 AAC/m4a 到缓存文件。
  * - [publish]：把结果写入 MediaStore 音乐库，写入完成后清 IS_PENDING，
  *   这样 LibraryRepository 的 DATE_ADDED DESC 查询能立刻看到新文件。
- * - [importAudio]：04 屏「导入本地文件」——把 SAF 选中的音频原样复制到媒体库，
- *   不做任何下载、不声明 INTERNET（版权合规替代方案）。
+ * - [importAudio]：04 屏次要入口「导入本地文件」——把 SAF 选中的音频原样复制到媒体库。
+ * - [publishFile]：04 屏主入口「链接下载」——LinkDownloadRepository 把直链下载到缓存后
+ *   经此方法入库，复用同一套 IS_PENDING 发布流程。
  *
  * 不使用 ffmpeg-kit（已退役），不申请 MANAGE_EXTERNAL_STORAGE。
  */
@@ -150,7 +151,7 @@ class MediaEditRepository(private val context: Context) {
         }.onFailure { temp.delete() }
     }
 
-    /** 04 屏：把用户选中的本地音频原样导入音乐库（无网络、无转码）。 */
+    /** 04 屏次要入口：把用户选中的本地音频原样导入音乐库（无网络、无转码）。 */
     suspend fun importAudio(uri: Uri): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
             val displayName = resolveDisplayName(uri)
@@ -165,12 +166,27 @@ class MediaEditRepository(private val context: Context) {
         }
     }
 
+    /**
+     * 供 04 链接下载复用：把缓存目录中的文件写入音乐库并返回显示名。
+     * 与 [exportAudio] / [importAudio] 共用 IS_PENDING 发布流程，曲库可立即扫描到。
+     */
+    fun publishFile(temp: File, displayName: String, mime: String): String {
+        publish(temp, displayName, mime)
+        return displayName
+    }
+
     private fun publish(temp: File, displayName: String, mime: String) {
         val target = insertPending(displayName, mime)
-        val output = context.contentResolver.openOutputStream(target)
-            ?: error("无法写入音乐库")
-        temp.inputStream().use { source -> output.use { destination -> source.copyTo(destination) } }
-        markReady(target)
+        try {
+            val output = context.contentResolver.openOutputStream(target)
+                ?: error("无法写入音乐库")
+            temp.inputStream().use { source -> output.use { destination -> source.copyTo(destination) } }
+            markReady(target)
+        } catch (error: Throwable) {
+            // 写入失败不能留下 IS_PENDING=1 的幽灵记录。
+            context.contentResolver.delete(target, null, null)
+            throw error
+        }
     }
 
     private fun insertPending(displayName: String, mime: String): Uri {

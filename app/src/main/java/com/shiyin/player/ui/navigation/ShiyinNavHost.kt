@@ -20,8 +20,8 @@ import com.shiyin.player.di.AppContainer
 import com.shiyin.player.ui.screens.DesignNotesScreen
 import com.shiyin.player.ui.screens.EditorViewModel
 import com.shiyin.player.ui.screens.ExtractAudioScreen
-import com.shiyin.player.ui.screens.ImportViewModel
 import com.shiyin.player.ui.screens.LibraryScreen
+import com.shiyin.player.ui.screens.LinkDownloadViewModel
 import com.shiyin.player.ui.screens.LibraryViewModel
 import com.shiyin.player.ui.screens.LinkDownloadScreen
 import com.shiyin.player.ui.screens.MusicTrimScreen
@@ -157,17 +157,23 @@ fun ShiyinNavHost(
             )
         }
 
-        // 04：版权合规替代方案，SAF 选本机音频导入曲库，零网络。
+        // 04：真实链接下载（OkHttp 直链 GET → 音乐库），次要入口保留 SAF 本地导入；零广告。
         composable(Routes.LINK_DOWNLOAD) {
             assertAdFree(Routes.LINK_DOWNLOAD)
-            val vm: ImportViewModel = viewModel(
-                factory = viewModelFactory<ImportViewModel> {
-                    ImportViewModel(container.mediaEditRepository)
+            val vm: LinkDownloadViewModel = viewModel(
+                factory = viewModelFactory<LinkDownloadViewModel> {
+                    LinkDownloadViewModel(
+                        downloadRepository = container.linkDownloadRepository,
+                        mediaEditRepository = container.mediaEditRepository
+                    )
                 }
             )
             val state by vm.uiState.collectAsStateWithLifecycle()
             LinkDownloadScreen(
                 state = state,
+                onUrlChange = vm::onUrlChange,
+                onDownload = vm::download,
+                onCancel = vm::cancel,
                 onImport = vm::import,
                 onReset = vm::reset,
                 onConsumeError = vm::consumeError,

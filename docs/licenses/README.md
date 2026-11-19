@@ -25,7 +25,13 @@
 |---|---|---|---|
 | `androidx.media3:media3-transformer` | 1.11.1 | 05 音乐裁剪 / 06 视频提取音频 | Apache License 2.0（AndroidX / AOSP） |
 | `androidx.media3:media3-muxer`（传递依赖） | 1.11.1 | Transformer 内部封装输出 | Apache License 2.0 |
+| `com.squareup.okhttp3:okhttp` | 5.5.1 | 04 链接下载（直链 GET） | Apache License 2.0（Square / OkHttp） |
+| `com.squareup.okhttp3:okhttp-android`（KMP variant） | 5.5.1 | Gradle 自动解析的 Android 实现 | Apache License 2.0 |
+| `com.squareup.okio:okio` / `okio-jvm`（传递依赖） | 3.18.1 | OkHttp / DataStore 共用 I/O 层 | Apache License 2.0 |
 
-说明：Media3 全部模块共用 `version.ref = "media3"`，避免 ABI 错配；未引入 ffmpeg-kit（已退役）、
-未引入任何网络库或广告 SDK。Apache-2.0 要求随分发保留 NOTICE，发布前需核对 AAR 内 `NOTICE` 文件
-是否需要随 APK 附随（当前为内部测试构建，未做发布打包）。
+说明：
+- Media3 全部模块共用 `version.ref = "media3"`，避免 ABI 错配；okio 由 Gradle 统一对齐到 3.18.1，
+  与 `datastore-core-okio` 无冲突（已用 `dependencies --configuration debugRuntimeClasspath` 核实）。
+- 未引入 ffmpeg-kit（已退役）、未引入 Retrofit / WorkManager / Coil 网络层 / 任何广告 SDK。
+- Apache-2.0 要求随分发保留 NOTICE，发布前需核对各 AAR 内 `NOTICE` 文件是否需要随 APK 附随
+  （当前为内部测试构建，未做发布打包）。

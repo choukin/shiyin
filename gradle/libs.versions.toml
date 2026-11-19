@@ -3,7 +3,7 @@
 # 规则：androidx.compose.* 由 BOM 统一管理，[libraries] 中不写 version。
 # 规则：Compose Compiler 插件版本与 Kotlin 共用同一 version.ref，不要单独锁。
 # 规则：依赖统一在此登记；media3 各模块必须共用 version.ref = "media3"，避免 ABI 错配。
-# 二期已启用 media3-transformer（05 裁剪 / 06 提取音频），04 改为本地导入，不引网络库。
+# 二期已启用 media3-transformer（05 裁剪 / 06 提取音频）与 OkHttp（04 链接下载，需 INTERNET）。
 
 [versions]
 agp = "9.5.1"
@@ -18,6 +18,8 @@ coil3 = "3.6.3"
 datastore = "1.3.0"
 coroutines = "1.11.0"
 junit = "4.13.2"
+# OkHttp 5.5.1：Maven Central 最新稳定版（核实 2026-11-19，5.0.0-alpha.* 为预发布不采用）
+okhttp = "5.5.1"
 
 # 平台级别（写在 app/build.gradle.kts，此处仅作记录）
 # compileSdk = 37 / targetSdk = 36 / minSdk = 26 / Java = 17
@@ -55,12 +57,17 @@ androidx-datastore-preferences = { group = "androidx.datastore", name = "datasto
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 
+# ---- 网络（仅 04 链接下载使用；Coil 封面仍只走 content:// 本地 URI）----
+# OkHttp 5.x 为 KMP 根 artifact，Gradle 会自动解析 jvm/android variant，无需显式写 okhttp-jvm。
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+
 # ---- 测试 ----
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 
 # ---- 二期状态 ----
 # 已落地：androidx.media3:media3-transformer 1.11.1 → 05 音乐裁剪 / 06 视频提取音频
-# 已决策：04 链接下载改为「导入本地文件」（版权合规），不引 OkHttp / WorkManager / INTERNET
+# 已落地：com.squareup.okhttp3:okhttp 5.5.1 + INTERNET / ACCESS_NETWORK_STATE → 04 链接下载
+#         仅下载用户显式输入的音/视频直链，不做第三方平台链接解析；本地导入作为次要入口保留
 # 预留：FOREGROUND_SERVICE_MEDIA_PROCESSING + mediaProcessing FGS（P2，需处理 6h/天配额）
 # 预留：androidx.compose.ui:ui-test-junit4 / ui-test-manifest → Compose 组件测试
 # 禁用：com.arthenica:ffmpeg-kit-*（已退役、Maven 二进制下架）
