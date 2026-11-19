@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 设计稿已确定的 10 条命名约定（勿改名，ad_label 尤其不能改） -->
+    <string name="app_name">拾音</string>
+    <string name="library_title">曲库</string>
+    <string name="quick_tools">快捷工具</string>
+    <string name="recently_added">最近添加</string>
+    <string name="ad_label">广告</string>
+    <string name="scan_local">扫描本机</string>
+    <string name="link_download">链接下载</string>
+    <string name="music_trim">音乐裁剪</string>
+    <string name="extract_audio">视频提取音频</string>
+    <string name="feature_phase_two">二期开放</string>
+
+    <!-- 01 开屏 -->
+    <string name="splash_brand_sub">听见，本机的一切</string>
+
+    <!-- 02 曲库（标签项名称为 PROVISIONAL：设计稿未给出具体标签文案） -->
+    <string name="library_tab_all">全部</string>
+    <string name="library_tab_favorites">收藏</string>
+    <string name="library_tab_albums">专辑</string>
+    <string name="library_tab_artists">歌手</string>
+    <string name="library_ad_placeholder">这里是广告位，一期为可关闭的本地占位</string>
+    <string name="library_empty_title">曲库还是空的</string>
+    <string name="library_empty_body">扫描本机音频，把喜欢的歌收进来</string>
+    <string name="library_empty_action">去扫描本机</string>
+    <string name="library_design_notes_action">右上角可查看设计说明</string>
+
+    <!-- 权限态（一期真实实现） -->
+    <string name="permission_audio_title">需要访问本机音频</string>
+    <string name="permission_audio_body">拾音只读取本机音乐文件用于生成曲库，不上传任何内容。</string>
+    <string name="permission_grant">授予权限</string>
+    <string name="permission_open_settings">去系统设置</string>
+    <string name="permission_denied_hint">权限被永久拒绝，请到系统设置中手动开启。</string>
+
+    <!-- 03 扫描本机 -->
+    <string name="scan_title">扫描本机</string>
+    <string name="scan_start">开始扫描</string>
+    <string name="scan_scanning">正在扫描本机音频…</string>
+    <string name="scan_ready">准备就绪，可以开始扫描</string>
+    <string name="scan_result">已找到 %1$d 首音频</string>
+    <string name="scan_back_to_library">返回曲库</string>
+
+    <!-- 07 播放器 -->
+    <string name="player_now_playing">正在播放</string>
+    <string name="player_no_track">还没有选择歌曲</string>
+
+    <!-- 04 / 05 / 06 二期占位（零广告） -->
+    <string name="placeholder_link_body">粘贴链接即可把音频保存到本机。该功能计划在二期开放。</string>
+    <string name="placeholder_link_error_demo">链接解析失败（设计示意，非产品功能）</string>
+    <string name="placeholder_trim_body">在波形上选择片段，导出为新的音频文件。该功能计划在二期开放。</string>
+    <string name="placeholder_trim_export_demo">导出成功（设计示意，非产品功能）</string>
+    <string name="placeholder_extract_body">从视频中整段或按所选片段提取音频。该功能计划在二期开放。</string>
+    <string name="placeholder_extract_whole">整段提取</string>
+    <string name="placeholder_extract_range">所选片段</string>
+
+    <!-- 08 广告位规范与设计说明（只读静态页） -->
+    <string name="design_notes_title">广告位规范与设计说明</string>
+    <string name="design_notes_disclaimer">设计说明，非产品功能</string>
+    <string name="design_notes_palette">色板</string>
+    <string name="design_notes_provisional">当前布局使用暂定标尺（PROVISIONAL），非设计稿标注；标注到位后只改 ui/theme 四个文件。</string>
+    <string name="design_notes_radius">圆角</string>
+    <string name="design_notes_radius_body">卡片 16dp / 按钮 14dp / 胶囊导航 36dp / 封面 24dp（设计稿确定值）。</string>
+    <string name="design_notes_type">字体</string>
+    <string name="design_notes_type_body">Noto Sans SC 用于正文与标题，Geist Mono 用于时长、进度、编号与波形刻度。字体文件待补入 res/font/，当前为系统字体兜底。</string>
+    <string name="design_notes_ad_rule">广告位规范</string>
+    <string name="design_notes_splash_rule">01 开屏：纯品牌 1.2s，零广告。</string>
+    <string name="design_notes_banner_rule">02 曲库：条形广告位在「快捷工具」与「最近添加」之间，可关闭且带「广告」标识。</string>
+    <string name="design_notes_edit_rule">04 / 05 / 06 编辑类页面零广告。</string>
+    <string name="design_notes_states">待补充状态</string>
+    <string name="design_notes_state_empty">空曲库引导（一期真实实现）</string>
+    <string name="design_notes_state_permission">无存储权限（一期真实实现）</string>
+    <string name="design_notes_state_link_error">链接解析失败（二期静态示意）</string>
+    <string name="design_notes_state_export">导出成功提示（二期静态示意）</string>
+    <string name="design_notes_license_title">字体许可</string>
+    <string name="design_notes_license">Noto Sans SC / Geist Mono 均为 SIL OFL 1.1；许可原文待补入 docs/licenses/，字体二进制待补入 res/font/。</string>
+    <string name="design_notes_copyright_title">版权合规</string>
+    <string name="design_notes_copyright">链接下载涉及版权授权，二期启动前必须先确认来源合法，或改为导入本地文件。</string>
+</resources>

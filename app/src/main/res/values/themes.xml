@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      启动主题：平台 Material 主题即可，不依赖 Material Components 库。
+      批次 B 的 ShiyinTheme（Compose）会接管运行时视觉；此主题只负责开屏首帧不白闪。
+    -->
+    <style name="Theme.Shiyin" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/background</item>
+        <item name="android:statusBarColor">@color/background</item>
+        <item name="android:navigationBarColor">@color/background</item>
+    </style>
+</resources>
