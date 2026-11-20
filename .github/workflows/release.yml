@@ -32,28 +32,43 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           # versionCode 取提交总数，需要完整历史
           fetch-depth: 0
 
       - name: JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Android SDK（runner 预装）
+        run: |
+          set -euo pipefail
+          # 不用 android-actions/setup-android@v3：其 packages 默认值含已被 Google 下架的
+          # legacy "tools" 包，新版 ubuntu runner 上 sdkmanager 会报
+          # "Failed to find package 'tools'" 并退出 1（2026 年多起同类故障）。
+          # ubuntu-latest 自带 Android SDK 且 licenses 已接受，这里只补环境变量与 PATH。
+          : "${ANDROID_HOME:=/usr/local/lib/android/sdk}"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -path '*/bin/sdkmanager' 2>/dev/null | sort -V | tail -1)"
+          if [ -z "$SDKMANAGER" ]; then
+            echo "::error::找不到 sdkmanager，请检查 runner 的 Android SDK 路径"
+            exit 1
+          fi
+          echo "$(dirname "$SDKMANAGER")" >> "$GITHUB_PATH"
+          echo "sdkmanager: $SDKMANAGER"
 
       - name: Gradle
         uses: gradle/actions/setup-gradle@v4
 
       - name: SDK 许可与组件
         run: |
+          set -euo pipefail
           yes | sdkmanager --licenses > /dev/null || true
           # 缺失时由 AGP 按 compileSdk 自动补齐；这里安装失败不阻塞
-          sdkmanager --install "platforms;android-37" "build-tools;36.0.0" > /dev/null || true
+          sdkmanager --install "platforms;android-37" "build-tools;36.0.0" "platform-tools" > /dev/null || true
 
       - name: 解析版本号
         id: version
