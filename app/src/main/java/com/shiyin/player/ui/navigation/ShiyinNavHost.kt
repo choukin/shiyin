@@ -1,5 +1,7 @@
 package com.shiyin.player.ui.navigation
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -13,6 +15,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.shiyin.player.data.media.ClipPreviewPlayer
+import com.shiyin.player.data.media.MediaDeleteRepository.DeleteMode
 import com.shiyin.player.data.model.ExtractMode
 import com.shiyin.player.data.model.PermissionState
 import com.shiyin.player.data.permission.Permissions
@@ -25,28 +29,13 @@ import com.shiyin.player.ui.screens.LinkDownloadViewModel
 import com.shiyin.player.ui.screens.LibraryViewModel
 import com.shiyin.player.ui.screens.LinkDownloadScreen
 import com.shiyin.player.ui.screens.MusicTrimScreen
+import com.shiyin.player.ui.screens.PlaylistScreen
+import com.shiyin.player.ui.screens.PlaylistViewModel
 import com.shiyin.player.ui.screens.PlayerScreen
 import com.shiyin.player.ui.screens.PlayerViewModel
 import com.shiyin.player.ui.screens.ScanScreen
 import com.shiyin.player.ui.screens.ScanViewModel
 import com.shiyin.player.ui.screens.SplashScreen
-
-/**
- * 零广告路由白名单（docs/AD_SPEC.md）：广告组件只允许出现在 02 曲库页，
- * 导航层用 assertAdFree 统一约束，避免逐屏判断时漏掉编辑类页面。
- */
-internal val AD_FREE_ROUTES = setOf(
-    Routes.SPLASH,
-    Routes.LINK_DOWNLOAD,
-    Routes.TRIM,
-    Routes.EXTRACT,
-    Routes.PLAYER,
-    Routes.DESIGN_NOTES
-)
-
-private fun assertAdFree(route: String) {
-    check(route in AD_FREE_ROUTES) { "$route 必须是零广告页面" }
-}
 
 private inline fun <reified VM : ViewModel> viewModelFactory(
     crossinline create: () -> VM
@@ -94,6 +83,13 @@ fun ShiyinNavHost(
                 }
             )
             val state by vm.uiState.collectAsStateWithLifecycle()
+            // 系统删除确认弹窗（MediaStore.createTrashRequest / createDeleteRequest）。
+            val deleteLauncher = rememberLauncherForActivityResult(
+                ActivityResultContracts.StartIntentSenderForResult()
+            ) { result ->
+                // 用户在系统弹窗点「删除」后 resultCode= RESULT_OK，此时刷新曲库。
+                if (result.resultCode == android.app.Activity.RESULT_OK) vm.refresh()
+            }
             LaunchedEffect(Unit) {
                 vm.onPermissionStateChanged(
                     if (Permissions.isGranted(context)) {
@@ -106,15 +102,36 @@ fun ShiyinNavHost(
             LibraryScreen(
                 state = state,
                 onTabSelected = vm::onTabSelected,
+                onOpenGroup = vm::openGroup,
+                onCloseGroup = vm::closeGroup,
+                onToggleFavorite = vm::toggleFavorite,
                 onScanClick = { navController.navigate(Routes.SCAN) },
                 onOpenTool = { route -> navController.navigate(route) },
                 onOpenDesignNotes = { navController.navigate(Routes.DESIGN_NOTES) },
-                onTrackClick = { track ->
-                    val index = state.tracks.indexOf(track).coerceAtLeast(0)
-                    container.playerController.setQueue(state.tracks, index)
+                // 队列用「当前视图可见的列表」，收藏 / 分组二级页播放时不会串进全量曲库。
+                onTrackClick = { track, queue ->
+                    val index = queue.indexOf(track).coerceAtLeast(0)
+                    container.playerController.setQueue(queue, index)
                     navController.navigate(Routes.PLAYER)
                 },
-                onDismissAd = vm::dismissAd,
+                onDeleteRequest = { track, mode ->
+                    val request = container.mediaDeleteRepository.requestDelete(listOf(track.uri), mode)
+                    if (request == null) {
+                        // API<30 已直接删除，这里只刷新。
+                        vm.refresh()
+                    } else {
+                        runCatching { deleteLauncher.launch(request) }
+                            .onFailure {
+                                // 部分 ROM 不支持回收站请求，回退到永久删除。
+                                if (mode == DeleteMode.Trash) {
+                                    val fallback = container.mediaDeleteRepository.requestDelete(
+                                        listOf(track.uri), DeleteMode.Permanent
+                                    )
+                                    fallback?.let { deleteLauncher.launch(it) }
+                                }
+                            }
+                    }
+                },
                 onOpenSettings = openSettings,
                 onPlayerBarClick = { navController.navigate(Routes.PLAYER) },
                 onPlayerToggle = {
@@ -126,8 +143,8 @@ fun ShiyinNavHost(
                 },
                 isPlaying = playerState.isPlaying,
                 currentTrack = playerState.currentTrack,
-                resolveArtwork = { track ->
-                    container.albumArtResolver.resolve(track.albumId, track.uri)
+                resolveArtwork = { albumId, uri ->
+                    container.albumArtResolver.resolve(albumId, uri)
                 }
             )
         }
@@ -157,9 +174,8 @@ fun ShiyinNavHost(
             )
         }
 
-        // 04：真实链接下载（OkHttp 直链 GET → 音乐库），次要入口保留 SAF 本地导入；零广告。
+        // 04：真实链接下载（OkHttp 直链 GET → 音乐库），次要入口保留 SAF 本地导入。
         composable(Routes.LINK_DOWNLOAD) {
-            assertAdFree(Routes.LINK_DOWNLOAD)
             val vm: LinkDownloadViewModel = viewModel(
                 factory = viewModelFactory<LinkDownloadViewModel> {
                     LinkDownloadViewModel(
@@ -183,12 +199,12 @@ fun ShiyinNavHost(
 
         // 05 / 06 共用 EditorViewModel，仅 removeVideo 与默认模式不同。
         composable(Routes.TRIM) {
-            assertAdFree(Routes.TRIM)
             val vm: EditorViewModel = viewModel(
                 factory = viewModelFactory<EditorViewModel> {
                     EditorViewModel(
                         repository = container.mediaEditRepository,
                         waveformExtractor = container.waveformExtractor,
+                        previewPlayer = ClipPreviewPlayer(context.applicationContext),
                         removeVideo = false,
                         defaultMode = ExtractMode.RANGE
                     )
@@ -199,20 +215,26 @@ fun ShiyinNavHost(
                 state = state,
                 onSourceSelected = vm::onSourceSelected,
                 onRangeChange = vm::onRangeChange,
+                onExportFileNameChange = vm::onExportFileNameChange,
+                onExportFormatChange = vm::onExportFormatChange,
                 onExport = vm::export,
                 onResetExport = vm::resetExportState,
                 onConsumeError = vm::consumeError,
+                onTogglePreview = vm::togglePreview,
+                onStopPreview = vm::stopPreview,
+                onAttachVideo = vm::attachVideoView,
+                onDetachVideo = vm::detachVideoView,
                 onBack = { navController.popBackStack() }
             )
         }
 
         composable(Routes.EXTRACT) {
-            assertAdFree(Routes.EXTRACT)
             val vm: EditorViewModel = viewModel(
                 factory = viewModelFactory<EditorViewModel> {
                     EditorViewModel(
                         repository = container.mediaEditRepository,
                         waveformExtractor = container.waveformExtractor,
+                        previewPlayer = ClipPreviewPlayer(context.applicationContext),
                         removeVideo = true,
                         defaultMode = ExtractMode.WHOLE
                     )
@@ -224,9 +246,15 @@ fun ShiyinNavHost(
                 onSourceSelected = vm::onSourceSelected,
                 onRangeChange = vm::onRangeChange,
                 onModeChange = vm::onModeChange,
+                onExportFileNameChange = vm::onExportFileNameChange,
+                onExportFormatChange = vm::onExportFormatChange,
                 onExport = vm::export,
                 onResetExport = vm::resetExportState,
                 onConsumeError = vm::consumeError,
+                onTogglePreview = vm::togglePreview,
+                onStopPreview = vm::stopPreview,
+                onAttachVideo = vm::attachVideoView,
+                onDetachVideo = vm::detachVideoView,
                 onBack = { navController.popBackStack() }
             )
         }
@@ -244,6 +272,36 @@ fun ShiyinNavHost(
                 onPrevious = vm::previous,
                 onNext = vm::next,
                 onSeek = vm::seekTo,
+                onBack = { navController.popBackStack() },
+                resolveArtwork = { track ->
+                    container.albumArtResolver.resolve(track.albumId, track.uri)
+                }
+            )
+        }
+
+        composable(Routes.PLAYLIST) {
+            val vm: PlaylistViewModel = viewModel(
+                factory = viewModelFactory<PlaylistViewModel> {
+                    PlaylistViewModel(
+                        container.playlistRepository,
+                        container.libraryRepository,
+                        container.playerController
+                    )
+                }
+            )
+            val state by vm.uiState.collectAsStateWithLifecycle()
+            PlaylistScreen(
+                state = state,
+                onCreate = vm::create,
+                onShowCreateDialog = vm::showCreateDialog,
+                onSelect = vm::select,
+                onDelete = vm::delete,
+                onAddTracks = vm::addTracks,
+                onRemoveTrack = vm::removeTrack,
+                onPlay = { playlist ->
+                    vm.play(playlist)
+                    navController.navigate(Routes.PLAYER)
+                },
                 onBack = { navController.popBackStack() }
             )
         }

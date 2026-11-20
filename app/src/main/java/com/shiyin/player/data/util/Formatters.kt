@@ -24,4 +24,21 @@ object Formatters {
             SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(dateAddedSec * 1000L))
         }.getOrDefault("--")
     }
+
+    /** 人类可读的文件大小：B / KB / MB / GB，保留 1 位小数。 */
+    fun formatFileSize(sizeBytes: Long): String {
+        if (sizeBytes <= 0L) return "0 B"
+        val units = arrayOf("B", "KB", "MB", "GB")
+        var value = sizeBytes.toDouble()
+        var unit = 0
+        while (value >= 1024.0 && unit < units.lastIndex) {
+            value /= 1024.0
+            unit++
+        }
+        return if (unit == 0) {
+            String.format(Locale.US, "%d B", value.toLong())
+        } else {
+            String.format(Locale.US, "%.1f %s", value, units[unit])
+        }
+    }
 }

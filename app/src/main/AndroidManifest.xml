@@ -6,6 +6,11 @@
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
+    <!-- 曲库删除：API 29 及以下删除媒体文件需要写权限；API 30+ 走 MediaStore 的
+         createTrashRequest/createDeleteRequest + 系统确认弹窗，不需要此权限。 -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29" />
 
     <!-- 后台播放前台服务：API 34 起 FGS 类型与类型专属权限必须成对声明 -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />

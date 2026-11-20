@@ -38,7 +38,6 @@ import com.shiyin.player.ui.theme.ShiyinDimens
  * 04 链接下载（二期真实实现）：输入音视频直链 → 真实下载进度 → 成功/失败态。
  * 次要入口保留 SAF「导入本地文件」，与已验收能力并存。
  *
- * 刻意不含任何广告参数（docs/AD_SPEC.md：04/05/06 编辑类页面零广告），
  * 尺寸全部取自 ProvisionalDimens / ShiyinDimens，屏幕层零魔数、零硬编码色值。
  */
 @Composable

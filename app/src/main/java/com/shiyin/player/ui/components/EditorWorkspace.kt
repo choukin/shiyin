@@ -1,5 +1,6 @@
 package com.shiyin.player.ui.components
 
+import android.view.TextureView
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,19 +19,25 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import com.shiyin.player.R
+import com.shiyin.player.data.model.AudioFormat
 import com.shiyin.player.data.model.EditorError
 import com.shiyin.player.data.model.EditorUiState
 import com.shiyin.player.data.model.ExportState
 import com.shiyin.player.data.model.ExtractMode
+import com.shiyin.player.data.util.ClipRange
 import com.shiyin.player.data.util.Formatters
 import com.shiyin.player.ui.theme.ProvisionalDimens
 import com.shiyin.player.ui.theme.ShiyinDimens
@@ -38,8 +45,8 @@ import com.shiyin.player.ui.theme.ShiyinDimens
 /**
  * 05 音乐裁剪 / 06 视频提取音频的共用工作区。
  *
- * 刻意不含任何广告参数或 AdBannerPlaceholder（docs/AD_SPEC.md：编辑类页面零广告），
- * 也不含网络相关入口。所有尺寸取自 ProvisionalDimens / ShiyinDimens，屏幕层零魔数。
+ * 纯本地处理，不含网络相关入口。
+ * 所有尺寸取自 ProvisionalDimens / ShiyinDimens，屏幕层零魔数。
  */
 @Composable
 fun EditorWorkspace(
@@ -50,9 +57,16 @@ fun EditorWorkspace(
     onPick: () -> Unit,
     onRangeChange: (Long, Long) -> Unit,
     onModeChange: (ExtractMode) -> Unit,
+    onExportFileNameChange: (String) -> Unit,
+    onExportFormatChange: (AudioFormat) -> Unit,
+    mp3Available: Boolean,
     onExport: () -> Unit,
     onResetExport: () -> Unit,
     onConsumeError: () -> Unit,
+    onTogglePreview: () -> Unit,
+    onStopPreview: () -> Unit,
+    onAttachVideo: (TextureView) -> Unit,
+    onDetachVideo: (TextureView) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val source = state.source
@@ -72,6 +86,11 @@ fun EditorWorkspace(
     val canExport = source?.hasAudio == true &&
         state.exportState !is ExportState.Running &&
         !state.isProbing
+    val playbackRatio = if (hasDuration && state.previewPositionMs in 0L..durationMs) {
+        state.previewPositionMs.toFloat() / durationMs
+    } else {
+        -1f
+    }
 
     Column(
         modifier = modifier
@@ -128,6 +147,15 @@ fun EditorWorkspace(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Spacer(modifier = Modifier.height(ProvisionalDimens.ItemVerticalSpacing / 2))
+                    Text(
+                        text = stringResource(
+                            R.string.editor_file_size,
+                            Formatters.formatFileSize(source.sizeBytes)
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         } else {
@@ -142,10 +170,25 @@ fun EditorWorkspace(
             WaveformView(
                 amplitudes = state.waveform,
                 selectionStartRatio = selectionStart,
-                selectionEndRatio = selectionEnd
+                selectionEndRatio = selectionEnd,
+                playbackPositionRatio = playbackRatio
             )
         } else {
             WaveformPlaceholder()
+        }
+
+        // 试听预览：视频源（hasVideo）额外挂 TextureView 显示画面；纯音频源只出声。
+        if (source != null && source.hasAudio) {
+            PreviewControls(
+                isPlaying = state.isPreviewPlaying,
+                hasVideo = source.hasVideo,
+                positionMs = state.previewPositionMs,
+                range = if (useRange) state.clipRange else ClipRange(0L, durationMs),
+                onToggle = onTogglePreview,
+                onStop = onStopPreview,
+                onAttachVideo = onAttachVideo,
+                onDetachVideo = onDetachVideo
+            )
         }
 
         if (showModeSelector) {
@@ -213,6 +256,62 @@ fun EditorWorkspace(
             )
         }
 
+        if (source != null && source.hasAudio) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(ShiyinDimens.CardCorner),
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Column(modifier = Modifier.padding(ProvisionalDimens.CardInnerPadding)) {
+                    Text(
+                        text = stringResource(R.string.editor_export_settings),
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                    Spacer(modifier = Modifier.height(ProvisionalDimens.ItemVerticalSpacing))
+                    OutlinedTextField(
+                        value = state.exportFileName,
+                        onValueChange = onExportFileNameChange,
+                        label = { Text(stringResource(R.string.editor_file_name_label)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(ProvisionalDimens.ItemVerticalSpacing))
+                    Text(
+                        text = stringResource(R.string.editor_format_label),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(ProvisionalDimens.ItemVerticalSpacing / 2))
+                    Row(horizontalArrangement = Arrangement.spacedBy(ProvisionalDimens.ItemVerticalSpacing)) {
+                        ExportFormatChip(
+                            format = AudioFormat.M4A,
+                            selected = state.exportFormat == AudioFormat.M4A,
+                            onClick = { onExportFormatChange(AudioFormat.M4A) }
+                        )
+                        ExportFormatChip(
+                            format = AudioFormat.WAV,
+                            selected = state.exportFormat == AudioFormat.WAV,
+                            onClick = { onExportFormatChange(AudioFormat.WAV) }
+                        )
+                        ExportFormatChip(
+                            format = AudioFormat.MP3,
+                            selected = state.exportFormat == AudioFormat.MP3,
+                            enabled = mp3Available,
+                            onClick = { onExportFormatChange(AudioFormat.MP3) }
+                        )
+                    }
+                    if (!mp3Available) {
+                        Spacer(modifier = Modifier.height(ProvisionalDimens.ItemVerticalSpacing / 2))
+                        Text(
+                            text = stringResource(R.string.editor_mp3_unavailable),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            }
+        }
+
         Button(
             onClick = onExport,
             enabled = canExport,
@@ -277,6 +376,98 @@ fun EditorWorkspace(
             }
         }
     }
+}
+
+/**
+ * 试听控制条 + 视频画面。
+ * - 播放/停止按钮复用自绘 Glyph.Play / Glyph.Pause / Glyph.Close；
+ * - 视频源显示 TextureView，用 AndroidView 生命周期做 attach/detach；
+ * - 进度文字显示「当前 / 选区终点」，让试听位置与裁剪区间一一对应。
+ */
+@Composable
+private fun PreviewControls(
+    isPlaying: Boolean,
+    hasVideo: Boolean,
+    positionMs: Long,
+    range: ClipRange,
+    onToggle: () -> Unit,
+    onStop: () -> Unit,
+    onAttachVideo: (TextureView) -> Unit,
+    onDetachVideo: (TextureView) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(ShiyinDimens.CardCorner),
+        color = MaterialTheme.colorScheme.surface
+    ) {
+        Column(modifier = Modifier.padding(ProvisionalDimens.CardInnerPadding)) {
+            Text(
+                text = stringResource(R.string.editor_preview_label),
+                style = MaterialTheme.typography.titleSmall
+            )
+            Text(
+                text = stringResource(R.string.editor_preview_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(ProvisionalDimens.ItemVerticalSpacing))
+
+            if (hasVideo) {
+                AndroidView(
+                    factory = { ctx -> TextureView(ctx) },
+                    update = { view -> onAttachVideo(view) },
+                    onRelease = { view -> onDetachVideo(view) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(PREVIEW_VIDEO_HEIGHT)
+                )
+                Spacer(modifier = Modifier.height(ProvisionalDimens.ItemVerticalSpacing))
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onToggle) {
+                    ShiyinGlyph(
+                        glyph = if (isPlaying) Glyph.Pause else Glyph.Play,
+                        modifier = Modifier.size(ProvisionalDimens.PlayControlIconSize)
+                    )
+                }
+                IconButton(onClick = onStop) {
+                    ShiyinGlyph(
+                        glyph = Glyph.Close,
+                        modifier = Modifier.size(ProvisionalDimens.IconSizeMedium)
+                    )
+                }
+                Text(
+                    text = stringResource(
+                        R.string.editor_preview_progress,
+                        Formatters.formatDuration(positionMs),
+                        Formatters.formatDuration(range.lengthMs)
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+private val PREVIEW_VIDEO_HEIGHT = 180.dp
+
+@Composable
+private fun ExportFormatChip(
+    format: AudioFormat,
+    selected: Boolean,
+    enabled: Boolean = true,
+    onClick: () -> Unit
+) {
+    FilterChip(
+        selected = selected,
+        enabled = enabled,
+        onClick = onClick,
+        label = { Text(format.label) }
+    )
 }
 
 private fun EditorError.toMessageRes(): Int = when (this) {

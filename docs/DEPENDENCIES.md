@@ -38,7 +38,7 @@
 | 宿主 / 导航 / 状态 | `androidx.activity:activity-compose` / `androidx.navigation:navigation-compose` / `androidx.lifecycle:lifecycle-viewmodel-compose` / `lifecycle-runtime-compose` / `androidx.core:core-ktx` | `setContent`、8 条路由、ViewModel、`collectAsStateWithLifecycle`、`ContextCompat` 权限判断 |
 | 播放 | `androidx.media3:media3-exoplayer` / `media3-session` / `media3-common` / `media3-datasource` / `media3-extractor` | ExoPlayer 解码；`MediaSessionService` 后台播放 + 锁屏/通知/蓝牙控制；`ContentDataSource` 读 MediaStore `content://` URI |
 | 封面 | `io.coil-kt.coil3:coil-compose` | `AsyncImage` 加载 MediaStore 专辑封面。**Coil 3 已换 group**（2.x 是 `io.coil-kt`） |
-| 持久化 | `androidx.datastore:datastore-preferences` | 收藏、上次播放、排序偏好、广告条「已关闭」、占位页「已了解」 |
+| 持久化 | `androidx.datastore:datastore-preferences` | 收藏、歌单、上次播放、排序偏好 |
 | 异步 | `org.jetbrains.kotlinx:kotlinx-coroutines-core` / `-android` | MediaStore 查询切 `Dispatchers.IO`；Flow / StateFlow |
 | 测试 | `junit:junit` | 纯逻辑单测（时长格式化、Track 映射、UiState 状态机、下载文件名解析） |
 
@@ -53,7 +53,6 @@
 | 封面网络层 | **不引 `coil-network-okhttp` / `coil-svg`** | 封面只加载 MediaStore `content://` URI。二期虽引入 OkHttp，但仅由 04 的 `LinkDownloadRepository` 直接使用，不给 Coil 接网络图片能力 |
 | 字体 | `.ttf/.otf` **离线打包进 `res/font`**，不引 `ui-text-google-fonts` | 可下载字体依赖 GMS + 联网，违背离线字体基线 |
 | 矢量素材 | Compose `Canvas` + `Brush` 自绘 + 少量 vector drawable，**不引 SVG 渲染库/波形库** | 设计稿的 SVG 是设计元素，Android 不吃 SVG；渐变用 `Brush` 更贴近且零依赖 |
-| 广告 | **零 SDK**；曲库页为本地可关闭占位条 | 全程不接真实广告、不因广告请求网络 |
 
 ## 3. 二期落地与仍预留
 
@@ -61,7 +60,7 @@
 **已声明**：`INTERNET` / `ACCESS_NETWORK_STATE`（仅 04 直链下载使用）。
 **仍不引入**：`media3-ui`、`media3-ui-compose`、各流媒体/软解码扩展、`material-icons-extended`、`ui-text-google-fonts`、
 `coil-network-okhttp`、`coil-svg`、Room、Hilt、Koin、KSP、Accompanist、`material3-adaptive`、
-Robolectric、Espresso、任何广告 SDK、Retrofit / WorkManager / 其他网络库。
+Robolectric、Espresso、Retrofit / WorkManager / 其他网络库。
 
 **二期已落地（2026-11-19，本机 `./gradlew :app:assembleDebug :app:testDebugUnitTest` 实测通过，25 个单测全绿）**：
 

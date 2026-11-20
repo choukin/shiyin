@@ -2,6 +2,8 @@ package com.shiyin.player.ui.screens
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.shiyin.player.data.model.LibraryGroupDetail
+import com.shiyin.player.data.model.LibraryGroupKind
 import com.shiyin.player.data.model.LibraryUiState
 import com.shiyin.player.data.model.PermissionState
 import com.shiyin.player.data.repository.LibraryRepository
@@ -17,11 +19,6 @@ class LibraryViewModel(private val repository: LibraryRepository) : ViewModel() 
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
 
     init {
-        viewModelScope.launch {
-            repository.observeAdDismissed().collect { dismissed ->
-                _uiState.update { it.copy(adDismissed = dismissed) }
-            }
-        }
         viewModelScope.launch {
             repository.observeFavorites().collect { favorites ->
                 _uiState.update { it.copy(favorites = favorites) }
@@ -43,12 +40,18 @@ class LibraryViewModel(private val repository: LibraryRepository) : ViewModel() 
         }
     }
 
+    /** 切 Tab 时退出二级详情，避免返回后落在旧分组里。 */
     fun onTabSelected(index: Int) {
-        _uiState.update { it.copy(selectedTab = index) }
+        _uiState.update { it.copy(selectedTab = index, detail = null) }
     }
 
-    fun dismissAd() {
-        viewModelScope.launch { repository.dismissAd() }
+    /** 打开专辑 / 歌手二级页。key 为规范化后的分组值，空串代表未知。 */
+    fun openGroup(kind: LibraryGroupKind, key: String) {
+        _uiState.update { it.copy(detail = LibraryGroupDetail(kind, key)) }
+    }
+
+    fun closeGroup() {
+        _uiState.update { it.copy(detail = null) }
     }
 
     fun toggleFavorite(trackId: String) {

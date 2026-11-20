@@ -22,8 +22,7 @@ import com.shiyin.player.ui.theme.ShiyinTheme
 import kotlinx.coroutines.delay
 
 /**
- * 01 开屏：纯品牌 1.2s，零广告（docs/AD_SPEC.md）。
- * 停留过短不做任何广告曝光，避免误触与合规风险。
+ * 01 开屏：纯品牌 1.2s，仅展示品牌标识后自动进入曲库。
  */
 @Composable
 fun SplashScreen(

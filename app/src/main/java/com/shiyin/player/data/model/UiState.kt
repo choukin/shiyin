@@ -13,8 +13,9 @@ data class LibraryUiState(
     val permission: PermissionState = PermissionState.Unknown,
     val tracks: List<Track> = emptyList(),
     val favorites: Set<String> = emptySet(),
-    val adDismissed: Boolean = true,
     val selectedTab: Int = 0,
+    /** 非空时曲库页展示专辑 / 歌手的二级详情，返回键与顶栏返回按钮负责关闭。 */
+    val detail: LibraryGroupDetail? = null,
     val error: String? = null
 )
 

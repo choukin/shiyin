@@ -15,8 +15,7 @@ import com.shiyin.player.ui.theme.ShiyinDimens
 
 /**
  * 04 / 05 / 06 二期功能占位页统一骨架。
- * 刻意不提供 showAd / adSlot 等广告参数：编辑类页面零广告由 API 层杜绝，
- * 而不是靠调用方传 false（docs/AD_SPEC.md）。
+ * 尺寸全部取自 ProvisionalDimens / ShiyinDimens，屏幕层零魔数。
  */
 @Composable
 fun FeaturePlaceholderScreen(

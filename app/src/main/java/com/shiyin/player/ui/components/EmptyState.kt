@@ -24,8 +24,8 @@ import com.shiyin.player.ui.theme.ShiyinDimens
 fun EmptyState(
     title: String,
     body: String,
-    actionLabel: String,
-    onAction: () -> Unit,
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -52,8 +52,10 @@ fun EmptyState(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
-            Spacer(modifier = Modifier.height(ProvisionalDimens.SectionVerticalSpacing))
-            Button(onClick = onAction) { Text(text = actionLabel) }
+            if (actionLabel != null && onAction != null) {
+                Spacer(modifier = Modifier.height(ProvisionalDimens.SectionVerticalSpacing))
+                Button(onClick = onAction) { Text(text = actionLabel) }
+            }
         }
     }
 }

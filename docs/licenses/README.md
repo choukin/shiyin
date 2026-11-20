@@ -32,6 +32,6 @@
 说明：
 - Media3 全部模块共用 `version.ref = "media3"`，避免 ABI 错配；okio 由 Gradle 统一对齐到 3.18.1，
   与 `datastore-core-okio` 无冲突（已用 `dependencies --configuration debugRuntimeClasspath` 核实）。
-- 未引入 ffmpeg-kit（已退役）、未引入 Retrofit / WorkManager / Coil 网络层 / 任何广告 SDK。
+- 未引入 ffmpeg-kit（已退役）、未引入 Retrofit / WorkManager / Coil 网络层。
 - Apache-2.0 要求随分发保留 NOTICE，发布前需核对各 AAR 内 `NOTICE` 文件是否需要随 APK 附随
   （当前为内部测试构建，未做发布打包）。

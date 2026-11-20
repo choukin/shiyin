@@ -34,8 +34,10 @@ object ProvisionalDimens {
     val CardInnerPadding = 16.dp // PROVISIONAL
 
     val QuickToolCardHeight = 88.dp // PROVISIONAL
+    val QuickToolCardWidth = 84.dp // PROVISIONAL：快捷工具横向滚动卡片宽度
     val TrackListItemHeight = 72.dp // PROVISIONAL
-    val AdBannerHeight = 64.dp // PROVISIONAL
+    val GroupItemHeight = 72.dp // PROVISIONAL：专辑 / 歌手分组卡片，与曲目行等高
+    val FavoriteIconSize = 32.dp // PROVISIONAL：收藏星标点击区域
     val CapsuleTabHeight = 36.dp // PROVISIONAL
     val MiniPlayerHeight = 64.dp // PROVISIONAL
     val WaveformHeight = 48.dp // PROVISIONAL

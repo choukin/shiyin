@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 
 /**
  * 图标全部 Canvas 自绘：一期不引 material-icons-extended，也不放 SVG 资源。
@@ -18,7 +19,8 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
  */
 enum class Glyph {
     Back, Close, Play, Pause, Next, Previous,
-    Scan, Link, Trim, Extract, Music, Info, Search
+    Scan, Link, Trim, Extract, Music, Info, Search, Playlist,
+    Favorite, FavoriteFilled, Chevron
 }
 
 @Composable
@@ -158,6 +160,42 @@ private fun DrawScope.drawGlyph(glyph: Glyph, color: Color) {
         Glyph.Search -> {
             drawCircle(color, radius = w * 0.24f, center = Offset(w * 0.44f, h * 0.44f), alpha = 0.9f)
             drawLine(color, Offset(w * 0.62f, h * 0.62f), Offset(w * 0.80f, h * 0.80f), line, StrokeCap.Round)
+        }
+
+        Glyph.Playlist -> {
+            // 三条横线 + 一个小音符，表示"歌曲列表"。
+            drawLine(color, Offset(w * 0.20f, h * 0.30f), Offset(w * 0.66f, h * 0.30f), line, StrokeCap.Round)
+            drawLine(color, Offset(w * 0.20f, h * 0.50f), Offset(w * 0.66f, h * 0.50f), line, StrokeCap.Round)
+            drawLine(color, Offset(w * 0.20f, h * 0.70f), Offset(w * 0.50f, h * 0.70f), line, StrokeCap.Round)
+            drawCircle(color, radius = w * 0.09f, center = Offset(w * 0.70f, h * 0.76f))
+            drawLine(color, Offset(w * 0.79f, h * 0.76f), Offset(w * 0.79f, h * 0.40f), line, StrokeCap.Round)
+        }
+
+        Glyph.Favorite, Glyph.FavoriteFilled -> {
+            // 五角星：外半径 0.42、内半径 0.19，中心 (0.5, 0.5)，起始角 -90°。
+            val star = Path().apply {
+                moveTo(w * 0.5000f, h * 0.0800f)
+                lineTo(w * 0.6117f, h * 0.3463f)
+                lineTo(w * 0.8995f, h * 0.3702f)
+                lineTo(w * 0.6807f, h * 0.5587f)
+                lineTo(w * 0.7469f, h * 0.8398f)
+                lineTo(w * 0.5000f, h * 0.6900f)
+                lineTo(w * 0.2531f, h * 0.8398f)
+                lineTo(w * 0.3193f, h * 0.5587f)
+                lineTo(w * 0.1005f, h * 0.3702f)
+                lineTo(w * 0.3883f, h * 0.3463f)
+                close()
+            }
+            if (glyph == Glyph.FavoriteFilled) {
+                drawPath(star, color)
+            } else {
+                drawPath(star, color, style = Stroke(width = line))
+            }
+        }
+
+        Glyph.Chevron -> {
+            drawLine(color, Offset(w * 0.42f, h * 0.28f), Offset(w * 0.64f, h * 0.50f), line, StrokeCap.Round)
+            drawLine(color, Offset(w * 0.64f, h * 0.50f), Offset(w * 0.42f, h * 0.72f), line, StrokeCap.Round)
         }
     }
 }

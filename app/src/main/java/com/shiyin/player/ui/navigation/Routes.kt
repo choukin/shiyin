@@ -9,5 +9,6 @@ object Routes {
     const val TRIM = "trim"
     const val EXTRACT = "extract"
     const val PLAYER = "player"
+    const val PLAYLIST = "playlist"
     const val DESIGN_NOTES = "design_notes"
 }

@@ -31,4 +31,25 @@ class FormattersTest {
     fun dateAdded_invalidReturnsPlaceholder() {
         assertEquals("--", Formatters.formatDateAdded(0L))
     }
+
+    @Test
+    fun fileSize_bytes() {
+        assertEquals("512 B", Formatters.formatFileSize(512L))
+    }
+
+    @Test
+    fun fileSize_kilobytes() {
+        assertEquals("1.5 KB", Formatters.formatFileSize(1536L))
+    }
+
+    @Test
+    fun fileSize_megabytes() {
+        assertEquals("2.0 MB", Formatters.formatFileSize(2L * 1024 * 1024))
+    }
+
+    @Test
+    fun fileSize_zeroAndNegative() {
+        assertEquals("0 B", Formatters.formatFileSize(0L))
+        assertEquals("0 B", Formatters.formatFileSize(-100L))
+    }
 }

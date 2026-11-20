@@ -32,8 +32,8 @@ import com.shiyin.player.ui.theme.ShiyinSurface
 import com.shiyin.player.ui.theme.ShiyinTheme
 
 /**
- * 08 广告位规范与设计说明：App 内只读静态页（标注「设计说明，非产品功能」），
- * 与 docs/DESIGN_NOTES.md、docs/AD_SPEC.md 内容对应。
+ * 08 设计说明：App 内只读静态页（标注「设计说明，非产品功能」），
+ * 与 docs/DESIGN_NOTES.md 内容对应。
  */
 @Composable
 fun DesignNotesScreen(
@@ -102,22 +102,6 @@ fun DesignNotesScreen(
                     title = stringResource(R.string.design_notes_type),
                     body = stringResource(R.string.design_notes_type_body)
                 )
-            }
-
-            item {
-                DesignNoteCard(title = stringResource(R.string.design_notes_ad_rule)) {
-                    listOf(
-                        R.string.design_notes_splash_rule,
-                        R.string.design_notes_banner_rule,
-                        R.string.design_notes_edit_rule
-                    ).forEach { resId ->
-                        Text(
-                            text = stringResource(resId),
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                        Spacer(modifier = Modifier.height(ProvisionalDimens.ItemVerticalSpacing))
-                    }
-                }
             }
 
             item {

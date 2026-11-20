@@ -16,6 +16,7 @@ import androidx.media3.transformer.EditedMediaItem
 import androidx.media3.transformer.ExportException
 import androidx.media3.transformer.ExportResult
 import androidx.media3.transformer.Transformer
+import com.shiyin.player.data.model.AudioFormat
 import com.shiyin.player.data.model.MediaSource
 import com.shiyin.player.data.util.ClipRange
 import java.io.File
@@ -71,7 +72,8 @@ class MediaEditRepository(private val context: Context) {
                 displayName = resolveDisplayName(uri),
                 durationMs = durationMs,
                 hasVideo = hasVideo,
-                hasAudio = hasAudio
+                hasAudio = hasAudio,
+                sizeBytes = querySize(uri)
             )
         } finally {
             extractor.release()
@@ -80,75 +82,104 @@ class MediaEditRepository(private val context: Context) {
 
     /**
      * 导出音频。clipRange 为整段时可传 ClipRange.full(durationMs) 或空区间（不设 clipping）。
+     *
+     * 三条编码链路：
+     * - M4A：Media3 Transformer（AAC），最快、兼容性最好；
+     * - WAV：PcmDecoder 解码 → WavEncoder 写 RIFF 头（无损）；
+     * - MP3：PcmDecoder 解码 → LAME native 编码（仅 arm64-v8a）。
+     *
+     * @param customName 用户自定义文件名（不含扩展名）；为空则用源文件 stem。
+     * @param format 目标格式。
      * 返回写入媒体库的文件名，供 UI 显示「导出成功」真实态。
      */
     suspend fun exportAudio(
         sourceUri: Uri,
         clipRange: ClipRange,
         removeVideo: Boolean,
-        baseName: String
+        baseName: String,
+        customName: String = "",
+        format: AudioFormat = AudioFormat.M4A
     ): Result<String> = withContext(Dispatchers.IO) {
-        val temp = File(context.cacheDir, "shiyin_export_${System.currentTimeMillis()}.m4a")
+        val temp = File(
+            context.cacheDir,
+            "shiyin_export_${System.currentTimeMillis()}.${format.extension}"
+        )
         runCatching {
-            // Transformer 需要一个带 Looper 的线程来构建与派发回调，固定在主线程启动。
-            withContext(Dispatchers.Main.immediate) {
-                suspendCancellableCoroutine<Unit> { continuation ->
-                    val listener = object : Transformer.Listener {
-                        override fun onCompleted(
-                            composition: Composition,
-                            exportResult: ExportResult
-                        ) {
-                            if (continuation.isActive) continuation.resume(Unit)
-                        }
-
-                        override fun onError(
-                            composition: Composition,
-                            exportResult: ExportResult,
-                            exportException: ExportException
-                        ) {
-                            if (continuation.isActive) {
-                                continuation.resumeWithException(
-                                    IllegalStateException(
-                                        exportException.message ?: "导出失败",
-                                        exportException
-                                    )
-                                )
-                            }
-                        }
-                    }
-
-                    val transformer = Transformer.Builder(context)
-                        .setAudioMimeType(MimeTypes.AUDIO_AAC)
-                        .addListener(listener)
-                        .build()
-
-                    val itemBuilder = MediaItem.Builder().setUri(sourceUri)
-                    if (clipRange.lengthMs > 0L) {
-                        itemBuilder.setClippingConfiguration(
-                            MediaItem.ClippingConfiguration.Builder()
-                                .setStartPositionMs(clipRange.startMs)
-                                .setEndPositionMs(clipRange.endMs)
-                                .build()
-                        )
-                    }
-                    val edited = EditedMediaItem.Builder(itemBuilder.build())
-                        .setRemoveVideo(removeVideo)
-                        .build()
-
-                    try {
-                        transformer.start(edited, temp.absolutePath)
-                    } catch (error: Throwable) {
-                        if (continuation.isActive) continuation.resumeWithException(error)
-                    }
-                    continuation.invokeOnCancellation { transformer.cancel() }
+            when (format) {
+                AudioFormat.M4A -> exportWithTransformer(sourceUri, clipRange, removeVideo, temp)
+                AudioFormat.WAV -> {
+                    val pcm = PcmDecoder.decode(context, sourceUri, clipRange)
+                    WavEncoder.encode(pcm, temp)
+                }
+                AudioFormat.MP3 -> {
+                    check(Mp3Encoder.isAvailable) { "当前设备不支持 MP3 编码" }
+                    val pcm = PcmDecoder.decode(context, sourceUri, clipRange)
+                    Mp3Encoder.encode(pcm, temp)
                 }
             }
 
-            val displayName = exportName(baseName)
-            publish(temp, displayName, MIME_AAC)
+            val displayName = exportName(customName.ifBlank { baseName }, format)
+            publish(temp, displayName, format.mime)
             temp.delete()
             displayName
         }.onFailure { temp.delete() }
+    }
+
+    /** M4A 走 Media3 Transformer；Transformer 需要在有 Looper 的线程构建/派发回调。 */
+    private suspend fun exportWithTransformer(
+        sourceUri: Uri,
+        clipRange: ClipRange,
+        removeVideo: Boolean,
+        temp: File
+    ) {
+        withContext(Dispatchers.Main.immediate) {
+            suspendCancellableCoroutine<Unit> { continuation ->
+                val listener = object : Transformer.Listener {
+                    override fun onCompleted(composition: Composition, exportResult: ExportResult) {
+                        if (continuation.isActive) continuation.resume(Unit)
+                    }
+
+                    override fun onError(
+                        composition: Composition,
+                        exportResult: ExportResult,
+                        exportException: ExportException
+                    ) {
+                        if (continuation.isActive) {
+                            continuation.resumeWithException(
+                                IllegalStateException(
+                                    exportException.message ?: "导出失败", exportException
+                                )
+                            )
+                        }
+                    }
+                }
+
+                val transformer = Transformer.Builder(context)
+                    .setAudioMimeType(MimeTypes.AUDIO_AAC)
+                    .addListener(listener)
+                    .build()
+
+                val itemBuilder = MediaItem.Builder().setUri(sourceUri)
+                if (clipRange.lengthMs > 0L) {
+                    itemBuilder.setClippingConfiguration(
+                        MediaItem.ClippingConfiguration.Builder()
+                            .setStartPositionMs(clipRange.startMs)
+                            .setEndPositionMs(clipRange.endMs)
+                            .build()
+                    )
+                }
+                val edited = EditedMediaItem.Builder(itemBuilder.build())
+                    .setRemoveVideo(removeVideo)
+                    .build()
+
+                try {
+                    transformer.start(edited, temp.absolutePath)
+                } catch (error: Throwable) {
+                    if (continuation.isActive) continuation.resumeWithException(error)
+                }
+                continuation.invokeOnCancellation { transformer.cancel() }
+            }
+        }
     }
 
     /** 04 屏次要入口：把用户选中的本地音频原样导入音乐库（无网络、无转码）。 */
@@ -229,19 +260,36 @@ class MediaEditRepository(private val context: Context) {
         return uri.lastPathSegment ?: FALLBACK_NAME
     }
 
-    private fun exportName(baseName: String): String {
-        val stem = baseName
+    /** 从 SAFUri 读取文件大小（OpenableColumns.SIZE）。 */
+    private fun querySize(uri: Uri): Long {
+        val cursor = context.contentResolver.query(
+            uri, arrayOf(OpenableColumns.SIZE), null, null, null
+        ) ?: return 0L
+        cursor.use {
+            if (it.moveToFirst()) {
+                val index = it.getColumnIndex(OpenableColumns.SIZE)
+                if (index >= 0 && !it.isNull(index)) return it.getLong(index)
+            }
+        }
+        return 0L
+    }
+
+    /**
+     * 生成入库文件名：清洗非法字符后拼目标扩展名。
+     * 自定义名不加「_拾音」后缀（用户要的就是他输入的名字）；仅默认名保留该后缀以延续旧行为。
+     */
+    private fun exportName(name: String, format: AudioFormat): String {
+        val stem = name
             .substringBeforeLast('.')
-            .replace(Regex("[/\\\\:*?\"<>|]"), "_")
+            .replace(Regex("[/\\\\:*?\"<>|\\x00-\\x1f]"), "_")
+            .trim()
             .ifBlank { FALLBACK_NAME }
-        return "$stem$EXPORT_SUFFIX"
+        return "$stem.${format.extension}"
     }
 
     private companion object {
-        const val MIME_AAC = "audio/mp4"
         const val MIME_AUDIO_FALLBACK = "audio/mpeg"
         const val EXPORT_SUB_DIR = "/Shiyin"
-        const val EXPORT_SUFFIX = "_拾音.m4a"
         const val FALLBACK_NAME = "拾音音频"
     }
 }

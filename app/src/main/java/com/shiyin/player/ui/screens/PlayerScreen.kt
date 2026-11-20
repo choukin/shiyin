@@ -11,15 +11,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import com.shiyin.player.R
 import com.shiyin.player.data.model.PlayerUiState
+import com.shiyin.player.data.model.Track
 import com.shiyin.player.data.util.Formatters
-import com.shiyin.player.ui.components.GradientAlbumArt
 import com.shiyin.player.ui.components.PlaybackControls
+import com.shiyin.player.ui.components.RotatingVinyl
 import com.shiyin.player.ui.components.ShiyinScaffold
 import com.shiyin.player.ui.theme.ProvisionalDimens
 import com.shiyin.player.ui.theme.ShiyinMonoText
@@ -37,6 +41,7 @@ fun PlayerScreen(
     onNext: () -> Unit,
     onSeek: (Long) -> Unit,
     onBack: () -> Unit,
+    resolveArtwork: suspend (Track) -> ImageBitmap? = { null },
     modifier: Modifier = Modifier
 ) {
     val duration = state.durationMs.coerceAtLeast(0L)
@@ -44,6 +49,10 @@ fun PlayerScreen(
         (state.positionMs.toFloat() / duration.toFloat()).coerceIn(0f, 1f)
     } else {
         0f
+    }
+    val currentTrack = state.currentTrack
+    val artwork by produceState<ImageBitmap?>(initialValue = null, key1 = currentTrack?.id) {
+        value = currentTrack?.let { resolveArtwork(it) }
     }
 
     ShiyinScaffold(
@@ -62,9 +71,9 @@ fun PlayerScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(ProvisionalDimens.SectionVerticalSpacing)
         ) {
-            GradientAlbumArt(
-                modifier = Modifier.size(ProvisionalDimens.CoverSizeLarge),
-                seed = state.currentTrack?.id ?: 0L
+            RotatingVinyl(
+                isPlaying = state.isPlaying,
+                artwork = artwork
             )
             Text(
                 text = state.currentTrack?.title ?: stringResource(R.string.player_no_track),

@@ -4,10 +4,12 @@ import android.content.Context
 import com.shiyin.player.data.local.AlbumArtResolver
 import com.shiyin.player.data.local.MediaStoreAudioDataSource
 import com.shiyin.player.data.media.LinkDownloadRepository
+import com.shiyin.player.data.media.MediaDeleteRepository
 import com.shiyin.player.data.media.MediaEditRepository
 import com.shiyin.player.data.media.WaveformExtractor
 import com.shiyin.player.data.prefs.ShiyinPreferences
 import com.shiyin.player.data.repository.LibraryRepository
+import com.shiyin.player.data.repository.PlaylistRepository
 import com.shiyin.player.playback.PlayerController
 
 /**
@@ -24,7 +26,10 @@ class AppContainer(context: Context) {
     val libraryRepository: LibraryRepository by lazy {
         LibraryRepository(audioDataSource, preferences)
     }
+    val playlistRepository: PlaylistRepository by lazy { PlaylistRepository(preferences) }
     val playerController: PlayerController by lazy { PlayerController(appContext) }
+    // 曲库删除真实媒体文件（回收站 / 永久删除，均走系统确认弹窗）。
+    val mediaDeleteRepository: MediaDeleteRepository by lazy { MediaDeleteRepository(appContext) }
 
     // 二期：05/06 纯本地的波形提取与媒体编辑管线。
     val waveformExtractor: WaveformExtractor by lazy { WaveformExtractor(appContext) }

@@ -12,11 +12,7 @@ class LibraryRepository(
 ) {
     suspend fun loadTracks(): List<Track> = dataSource.queryAll()
 
-    fun observeAdDismissed(): Flow<Boolean> = preferences.adDismissed
-
     fun observeFavorites(): Flow<Set<String>> = preferences.favorites
-
-    suspend fun dismissAd() = preferences.dismissAd()
 
     suspend fun toggleFavorite(trackId: String) = preferences.toggleFavorite(trackId)
 }

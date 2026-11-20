@@ -20,10 +20,13 @@ fun WaveformView(
     amplitudes: List<Float>,
     selectionStartRatio: Float,
     selectionEndRatio: Float,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** 播放头位置比例 [0,1]；负数表示不绘制。 */
+    playbackPositionRatio: Float = -1f
 ) {
     val activeColor = MaterialTheme.colorScheme.primary
     val inactiveColor = MaterialTheme.colorScheme.outlineVariant
+    val playheadColor = MaterialTheme.colorScheme.tertiary
     Canvas(
         modifier = modifier
             .fillMaxWidth()
@@ -49,9 +52,19 @@ fun WaveformView(
                 size = Size(barWidth, barHeight)
             )
         }
+        if (playbackPositionRatio in 0f..1f) {
+            val x = (size.width * playbackPositionRatio).coerceIn(0f, size.width)
+            drawLine(
+                color = playheadColor,
+                start = Offset(x, 0f),
+                end = Offset(x, size.height),
+                strokeWidth = PLAYHEAD_WIDTH_PX
+            )
+        }
     }
 }
 
 private const val BAR_WIDTH_RATIO = 0.6f
 private const val MIN_BAR_WIDTH_PX = 1f
 private const val MIN_BAR_HEIGHT_PX = 2f
+private const val PLAYHEAD_WIDTH_PX = 3f

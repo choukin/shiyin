@@ -20,6 +20,10 @@ coroutines = "1.11.0"
 junit = "4.13.2"
 # OkHttp 5.5.1：Maven Central 最新稳定版（核实 2026-11-19，5.0.0-alpha.* 为预发布不采用）
 okhttp = "5.5.1"
+# LAME MP3 编码器：MIT 协议，Maven Central 真实构件（核实 2026-11-20，AAR 含 arm64-v8a libLame.so）。
+# Android 平台无 MP3 编码器、Media3 Transformer 也无法输出 MP3，故引入 LAME 走「PCM→MP3」链路。
+# 注意：仅 arm64-v8a，x86 模拟器上 MP3 导出不可用（M4A/WAV 不受影响）。
+lame-mp3 = "1.0.4"
 
 # 平台级别（写在 app/build.gradle.kts，此处仅作记录）
 # compileSdk = 37 / targetSdk = 36 / minSdk = 26 / Java = 17
@@ -51,6 +55,9 @@ media3-extractor = { group = "androidx.media3", name = "media3-extractor", versi
 # 二期：音频裁剪 / 视频提取音频，与播放链路共用 media3 = 1.11.1
 media3-transformer = { group = "androidx.media3", name = "media3-transformer", version.ref = "media3" }
 
+# ---- MP3 编码（05/06 导出格式可选项；仅 arm64-v8a）----
+lame-mp3 = { group = "io.github.hequanli", name = "recorder-mp3", version.ref = "lame-mp3" }
+
 # ---- 封面 / 轻量持久化 / 异步 ----
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil3" }
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
@@ -74,6 +81,7 @@ junit = { group = "junit", name = "junit", version.ref = "junit" }
 # 禁用：com.google.accompanist:accompanist-permissions（改用 activity-compose 的 ActivityResultContracts）
 # 不引入：Hilt / Koin / Room / KSP / Accompanist / material-icons-extended / ui-text-google-fonts
 #          coil-network-okhttp / coil-svg / media3-ui / media3-ui-compose / 任何广告 SDK
+# 二期追加：io.github.hequanli:recorder-mp3 1.0.4（LAME, MIT）→ MP3 导出，仅 arm64-v8a
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
