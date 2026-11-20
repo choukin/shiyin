@@ -39,6 +39,10 @@ object ProvisionalDimens {
     val GroupItemHeight = 72.dp // PROVISIONAL：专辑 / 歌手分组卡片，与曲目行等高
     val SongResultItemHeight = 76.dp // PROVISIONAL：搜歌结果行（含试听/下载两个操作）
     val FavoriteIconSize = 32.dp // PROVISIONAL：收藏星标点击区域
+    val SwipeActionWidth = 68.dp // PROVISIONAL：左滑露出的编辑 / 删除按钮宽度
+    val SwipeActionSpacing = 8.dp // PROVISIONAL：左滑按钮间距与两侧留白
+    val SwipeActionIconGap = 4.dp // PROVISIONAL：左滑按钮图标与文字间距
+    val EditCoverSize = 96.dp // PROVISIONAL：编辑弹窗封面预览
     val CapsuleTabHeight = 36.dp // PROVISIONAL
     val MiniPlayerHeight = 64.dp // PROVISIONAL
     val WaveformHeight = 48.dp // PROVISIONAL

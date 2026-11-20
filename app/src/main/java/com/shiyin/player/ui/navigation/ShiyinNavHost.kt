@@ -133,6 +133,11 @@ fun ShiyinNavHost(
                             }
                     }
                 },
+                // 编辑（名称 / 简介 / 海报）与「仅从列表移除」都写 DataStore，不改手机文件。
+                onSaveEdit = vm::saveEdit,
+                onRemoveFromList = { track -> vm.removeFromLibrary(track.id) },
+                onRestoreHidden = vm::restoreHidden,
+                canTrash = container.mediaDeleteRepository.canTrash(),
                 onOpenSettings = openSettings,
                 onPlayerBarClick = { navController.navigate(Routes.PLAYER) },
                 onPlayerToggle = {
@@ -144,9 +149,8 @@ fun ShiyinNavHost(
                 },
                 isPlaying = playerState.isPlaying,
                 currentTrack = playerState.currentTrack,
-                resolveArtwork = { albumId, uri ->
-                    container.albumArtResolver.resolve(albumId, uri)
-                }
+                resolveArtwork = container.trackArtworkResolver::resolve,
+                loadArtwork = container.trackArtworkResolver::load
             )
         }
 
@@ -286,9 +290,7 @@ fun ShiyinNavHost(
                 onNext = vm::next,
                 onSeek = vm::seekTo,
                 onBack = { navController.popBackStack() },
-                resolveArtwork = { track ->
-                    container.albumArtResolver.resolve(track.albumId, track.uri)
-                }
+                resolveArtwork = container.trackArtworkResolver::resolve
             )
         }
 

@@ -56,10 +56,26 @@
     <string name="library_empty_body">扫描本机音频，把喜欢的歌收进来</string>
     <string name="library_empty_action">去扫描本机</string>
     <string name="library_design_notes_action">右上角可查看设计说明</string>
-    <!-- 曲库删除：左滑=回收站，长按菜单可选永久删除 -->
-    <string name="track_delete_swipe_hint">左滑删除</string>
-    <string name="track_delete_trash">移到回收站</string>
-    <string name="track_delete_permanent">永久删除</string>
+    <!-- 曲库曲目操作：左滑露出编辑 / 删除按钮，删除弹框再区分范围 -->
+    <string name="track_action_edit">编辑</string>
+    <string name="track_action_delete">删除</string>
+    <string name="track_delete_permanent">永久删除手机文件</string>
+    <string name="track_edit_title">编辑曲目</string>
+    <string name="track_edit_pick_cover">更换海报</string>
+    <string name="track_edit_clear_cover">恢复默认海报</string>
+    <string name="track_edit_name_label">名称</string>
+    <string name="track_edit_description_label">简介</string>
+    <string name="track_edit_notice">这些信息只在拾音中显示，不会改动手机里的音频文件。名称留空可恢复原名。</string>
+    <string name="track_edit_save">保存</string>
+    <string name="track_delete_dialog_title">删除曲目</string>
+    <string name="track_delete_dialog_body">「%1$s」要从哪里删除？</string>
+    <string name="track_delete_from_list">仅从列表移除</string>
+    <string name="track_delete_from_list_detail">手机文件保留，可在曲库底部恢复</string>
+    <string name="track_delete_phone_file">删除手机文件</string>
+    <string name="track_delete_phone_file_detail_trash">移入系统回收站，可在系统文件管理中恢复</string>
+    <string name="track_delete_phone_file_detail_permanent">从手机永久删除，无法恢复</string>
+    <string name="library_hidden_count">已从列表移除 %1$d 首，文件仍在手机里</string>
+    <string name="library_restore_hidden">恢复显示</string>
 
     <!-- 权限态（一期真实实现） -->
     <string name="permission_audio_title">需要访问本机音频</string>
@@ -182,6 +198,7 @@
     <string name="design_notes_state_permission">无存储权限（一期真实实现）</string>
     <string name="design_notes_state_link_error">下载失败提示（二期真实实现：无效地址 / HTTP 错误 / 非媒体内容 / 无网络）</string>
     <string name="design_notes_state_export">导出成功提示（二期真实实现）</string>
+    <string name="design_notes_state_track_edit">曲目编辑与删除范围（02 曲库真实实现：左滑编辑 / 删除，删除区分列表与手机文件）</string>
     <string name="design_notes_license_title">字体许可</string>
     <string name="design_notes_license">Noto Sans SC / Geist Mono 均为 SIL OFL 1.1；许可原文待补入 docs/licenses/，字体二进制待补入 res/font/。</string>
     <string name="design_notes_copyright_title">下载与来源说明</string>

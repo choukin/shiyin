@@ -127,4 +127,5 @@ Robolectric、Espresso、Retrofit / WorkManager / 其他网络库。
 | 大文件 / 取消 | 单文件上限 300MB、循环内 `ensureActive()`，失败删除缓存与 MediaStore pending 记录 |
 | 字体体积/授权 | Noto Sans SC 全字集数 MB～十几 MB，只取 2–3 字重或子集化；OFL LICENSE 放 `docs/licenses/` |
 | MediaStore 封面机型差异 | `AlbumArtResolver` 统一兜底渐变封面；Coil 配 placeholder/error；不阻塞列表 |
+| 曲目信息与文件不同步 | 名称 / 简介 / 海报是应用内覆盖，按 MediaStore `_ID` 关联；卸载 App 或换设备后覆盖信息不迁移，媒体文件本身的标签也不变。若后续需要跨设备，必须导出独立元数据文件 |
 | 二期 KSP 版本耦合 | 一期手动 DI + DataStore 完全绕开；二期上 Hilt/Room 时单独做版本矩阵验收 |

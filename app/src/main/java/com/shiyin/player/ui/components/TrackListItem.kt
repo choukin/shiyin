@@ -1,8 +1,10 @@
 package com.shiyin.player.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,12 +24,14 @@ import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
@@ -42,27 +46,30 @@ import com.shiyin.player.data.util.Formatters
 import com.shiyin.player.data.util.LibraryGrouping
 import com.shiyin.player.ui.theme.ProvisionalDimens
 import com.shiyin.player.ui.theme.ShiyinDimens
+import kotlinx.coroutines.launch
 
 /**
  * 02 屏曲目列表项。
- * - 普通点击：播放；
- * - 星标 / 长按菜单：收藏或取消收藏；
- * - 左滑：删除（移到回收站，系统确认弹窗）；
- * - 长按：菜单提供收藏、移到回收站与永久删除。
- * 时长用等宽 labelSmall（Geist Mono 分工）。
+ * - 普通点击：播放；星标 / 长按菜单：收藏；
+ * - 左滑：停住并露出「编辑」「删除」两个按钮，点击才执行，避免误删；
+ * - 长按菜单：收藏、编辑、删除、永久删除手机文件。
+ *
+ * 编辑 / 删除的具体交互由曲库页的弹窗承载，这里只负责手势与入口。
  */
 @Composable
 fun TrackListItem(
     track: Track,
     onClick: () -> Unit,
+    onEditClick: () -> Unit,
+    onDeleteClick: () -> Unit,
     onDeleteRequest: (DeleteMode) -> Unit,
     modifier: Modifier = Modifier,
     artwork: ImageBitmap? = null,
-    canTrash: Boolean = true,
     isFavorite: Boolean = false,
     onToggleFavorite: () -> Unit = {}
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     val favoriteLabel = stringResource(
         if (isFavorite) R.string.track_unfavorite else R.string.track_favorite
     )
@@ -72,48 +79,65 @@ fun TrackListItem(
     } else {
         track.artist
     }
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { value ->
-            if (value == SwipeToDismissBoxValue.StartToEnd ||
-                value == SwipeToDismissBoxValue.EndToStart
-            ) {
-                onDeleteRequest(if (canTrash) DeleteMode.Trash else DeleteMode.Permanent)
-                // 返回 false：不让 item 停留在 dismissed 态，删除成功后由列表刷新移除。
-                false
-            } else {
-                false
-            }
-        }
-    )
+    val subtitle = if (track.description.isBlank()) {
+        artistLabel
+    } else {
+        "$artistLabel · ${track.description}"
+    }
+
+    // 允许停在 EndToStart 展开态，也可以滑回；不在滑动时直接删除，删除由露出的按钮触发。
+    // 右滑方向由 enableDismissFromStartToEnd=false 关闭，无需废弃的 confirmValueChange veto。
+    val dismissState = rememberSwipeToDismissBoxState()
+    val collapse: () -> Unit = {
+        scope.launch { dismissState.reset() }
+    }
 
     SwipeToDismissBox(
         state = dismissState,
         modifier = modifier,
         backgroundContent = {
-            val color = if (
-                dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart ||
-                dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd
-            ) MaterialTheme.colorScheme.errorContainer else Color.Transparent
+            val shape = RoundedCornerShape(ShiyinDimens.CardCorner)
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(ShiyinDimens.CardCorner))
-                    .background(color)
-                    .padding(horizontal = ProvisionalDimens.CardInnerPadding),
+                    .clip(shape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .padding(horizontal = ProvisionalDimens.SwipeActionSpacing),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.End
             ) {
-                Text(
-                    text = stringResource(R.string.track_delete_swipe_hint),
-                    color = MaterialTheme.colorScheme.onErrorContainer,
-                    style = MaterialTheme.typography.bodySmall
+                SwipeAction(
+                    label = stringResource(R.string.track_action_edit),
+                    glyph = Glyph.Edit,
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    onClick = {
+                        collapse()
+                        onEditClick()
+                    }
+                )
+                Spacer(modifier = Modifier.width(ProvisionalDimens.SwipeActionSpacing))
+                SwipeAction(
+                    label = stringResource(R.string.track_action_delete),
+                    glyph = Glyph.Delete,
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    onClick = {
+                        collapse()
+                        onDeleteClick()
+                    }
                 )
             }
         },
-        enableDismissFromStartToEnd = true,
+        enableDismissFromStartToEnd = false,
         enableDismissFromEndToStart = true
     ) {
-        Box {
+        // 完全展开时前景已移出屏幕，直接隐藏，避免左边缘残留一小块曲目行。
+        Box(
+            modifier = Modifier.alpha(
+                if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) 0f else 1f
+            )
+        ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -142,7 +166,7 @@ fun TrackListItem(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = artistLabel,
+                        text = subtitle,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -188,12 +212,18 @@ fun TrackListItem(
                     }
                 )
                 DropdownMenuItem(
-                    text = { Text(stringResource(R.string.track_delete_trash)) },
+                    text = { Text(stringResource(R.string.track_action_edit)) },
                     onClick = {
                         menuExpanded = false
-                        onDeleteRequest(DeleteMode.Trash)
-                    },
-                    enabled = canTrash
+                        onEditClick()
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.track_action_delete)) },
+                    onClick = {
+                        menuExpanded = false
+                        onDeleteClick()
+                    }
                 )
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.track_delete_permanent)) },
@@ -203,6 +233,45 @@ fun TrackListItem(
                     }
                 )
             }
+        }
+    }
+}
+
+/** 左滑后露出的操作按钮：单一表面 + 1dp 描边，不叠渐变、不靠阴影分层。 */
+@Composable
+private fun SwipeAction(
+    label: String,
+    glyph: Glyph,
+    containerColor: Color,
+    contentColor: Color,
+    onClick: () -> Unit
+) {
+    val shape = RoundedCornerShape(ShiyinDimens.ButtonCorner)
+    Box(
+        modifier = Modifier
+            .size(
+                width = ProvisionalDimens.SwipeActionWidth,
+                height = ProvisionalDimens.TrackListItemHeight
+            )
+            .clip(shape)
+            .background(containerColor)
+            .border(ProvisionalDimens.DividerThickness, MaterialTheme.colorScheme.outlineVariant, shape)
+            .semantics { contentDescription = label }
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            ShiyinGlyph(
+                glyph = glyph,
+                tint = contentColor,
+                modifier = Modifier.size(ProvisionalDimens.IconSizeMedium)
+            )
+            Spacer(modifier = Modifier.height(ProvisionalDimens.SwipeActionIconGap))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = contentColor
+            )
         }
     }
 }

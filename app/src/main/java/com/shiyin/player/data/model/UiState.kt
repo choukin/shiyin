@@ -16,6 +16,8 @@ data class LibraryUiState(
     val selectedTab: Int = 0,
     /** 非空时曲库页展示专辑 / 歌手的二级详情，返回键与顶栏返回按钮负责关闭。 */
     val detail: LibraryGroupDetail? = null,
+    /** 「仅从列表移除」的曲目数，用于曲库底部的恢复入口。 */
+    val hiddenCount: Int = 0,
     val error: String? = null
 )
 

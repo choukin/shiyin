@@ -61,8 +61,16 @@ Android 端落地方式：Compose `Canvas` + `Brush.linearGradient/radialGradien
 | 链接解析失败 | 04 直链真实实现：无效地址 / 无网络 / HTTP 错误 / 非媒体内容 / 空文件 / 超 300MB / 写库失败，逐类给出提示并附技术 detail |
 | 搜歌状态 | 04 搜歌真实实现：未搜索引导、搜索中、空结果、加载更多、搜索/试听失败，均给出对应状态 |
 | 导出成功提示 | 05/06 二期真实实现：`ExportState.Success` 显示实际导出文件名，文件写入音乐库后可被曲库扫到 |
+| 曲目编辑与删除范围 | 02 曲库真实实现：左滑露出编辑 / 删除按钮；删除弹框区分「仅从列表移除」与「删除手机文件」，后者再走系统确认；被隐藏的曲目可整体恢复 |
 
-## 6. 产品风险提示
+## 6. 曲库曲目编辑与删除范围（2026-11-20）
+
+- **左滑**：`SwipeToDismissBox` 只停在展开态，露出「编辑」「删除」两个按钮，不再滑动即删除；点击按钮才执行，避免误删。长按菜单保留同样两个入口与「永久删除手机文件」。
+- **编辑**：名称 / 简介 / 海报是拾音内的展示覆盖，存在 DataStore（`track_metadata`，纯 JVM codec）+ 应用私有 `filesDir/covers/`（SAF 选图后压成 JPEG），**不改写手机里的音频文件，也不需要写权限**。名称留空恢复 MediaStore 原名；海报可清除回落到系统封面 / 渐变兜底。
+- **仅从列表移除**：只把 MediaStore `_ID` 记进 `hidden_tracks`，查询时过滤，文件仍在手机里；曲库底部常驻「已移除 N 首 · 恢复显示」入口，清空隐藏集合即可恢复。
+- **删除手机文件**：沿用 `MediaDeleteRepository`，API 30+ 用 `createTrashRequest`（回收站，可恢复），不支持时回退 `createDeleteRequest`；API 26–29 直接 `ContentResolver.delete`。系统确认框仍会再出现一次，避免一次点击就真删。
+
+## 7. 产品风险提示
 
 - **04 下载（2026-11-20 扩展）**：主入口「搜歌」调用 myfreemp3 公开接口
   `POST https://www.myfreemp3.com.cn/`（表单 `input/filter=name/page/type=netease`）取列表，

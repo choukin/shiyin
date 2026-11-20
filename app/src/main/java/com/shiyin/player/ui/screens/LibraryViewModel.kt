@@ -1,5 +1,6 @@
 package com.shiyin.player.ui.screens
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.shiyin.player.data.model.LibraryGroupDetail
@@ -22,6 +23,11 @@ class LibraryViewModel(private val repository: LibraryRepository) : ViewModel() 
         viewModelScope.launch {
             repository.observeFavorites().collect { favorites ->
                 _uiState.update { it.copy(favorites = favorites) }
+            }
+        }
+        viewModelScope.launch {
+            repository.observeHiddenTrackIds().collect { hidden ->
+                _uiState.update { it.copy(hiddenCount = hidden.size) }
             }
         }
     }
@@ -56,5 +62,34 @@ class LibraryViewModel(private val repository: LibraryRepository) : ViewModel() 
 
     fun toggleFavorite(trackId: String) {
         viewModelScope.launch { repository.toggleFavorite(trackId) }
+    }
+
+    /** 编辑名称 / 简介 / 封面；artworkSource 为选图返回的 Uri，removeArtwork 表示清除自定义封面。 */
+    fun saveEdit(
+        trackId: Long,
+        title: String,
+        description: String,
+        artworkSource: Uri?,
+        removeArtwork: Boolean
+    ) {
+        viewModelScope.launch {
+            repository.saveTrackEdit(trackId, title, description, artworkSource, removeArtwork)
+            refresh()
+        }
+    }
+
+    /** 仅从列表移除：文件保留在手机里，之后可从曲库底部恢复。 */
+    fun removeFromLibrary(trackId: Long) {
+        viewModelScope.launch {
+            repository.hideTrack(trackId)
+            refresh()
+        }
+    }
+
+    fun restoreHidden() {
+        viewModelScope.launch {
+            repository.restoreHiddenTracks()
+            refresh()
+        }
     }
 }

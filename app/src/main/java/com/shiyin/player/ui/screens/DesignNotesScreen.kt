@@ -110,7 +110,8 @@ fun DesignNotesScreen(
                         R.string.design_notes_state_empty,
                         R.string.design_notes_state_permission,
                         R.string.design_notes_state_link_error,
-                        R.string.design_notes_state_export
+                        R.string.design_notes_state_export,
+                        R.string.design_notes_state_track_edit
                     ).forEach { resId ->
                         Text(
                             text = stringResource(resId),

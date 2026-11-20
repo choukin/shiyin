@@ -4,8 +4,10 @@ import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -14,10 +16,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.res.stringResource
@@ -42,6 +48,8 @@ import com.shiyin.player.ui.components.QuickToolsRow
 import com.shiyin.player.ui.components.SectionHeader
 import com.shiyin.player.ui.components.ShiyinGlyph
 import com.shiyin.player.ui.components.ShiyinScaffold
+import com.shiyin.player.ui.components.TrackDeleteDialog
+import com.shiyin.player.ui.components.TrackEditDialog
 import com.shiyin.player.ui.components.TrackListItem
 import com.shiyin.player.ui.navigation.Routes
 import com.shiyin.player.ui.theme.ProvisionalDimens
@@ -55,6 +63,7 @@ import com.shiyin.player.ui.theme.ShiyinTheme
  * - 二级详情：顶栏显示分组名 + 返回按钮，系统返回键由 BackHandler 接管。
  *
  * 分组/过滤统一由 [deriveLibraryView] 纯函数派生，本层只负责渲染与本地化文案。
+ * 左滑露出的编辑 / 删除按钮分别打开本页的编辑弹窗与删除范围弹窗。
  * 无权限时整页替换为权限说明态。
  */
 @Composable
@@ -73,15 +82,24 @@ fun LibraryScreen(
     onPlayerBarClick: () -> Unit,
     onPlayerToggle: () -> Unit,
     modifier: Modifier = Modifier,
+    onSaveEdit: (Long, String, String, Uri?, Boolean) -> Unit = { _, _, _, _, _ -> },
+    onRemoveFromList: (Track) -> Unit = {},
+    onRestoreHidden: () -> Unit = {},
+    canTrash: Boolean = true,
     isPlaying: Boolean = false,
     currentTrack: Track? = null,
-    resolveArtwork: suspend (Long, Uri) -> ImageBitmap? = { _, _ -> null }
+    resolveArtwork: suspend (Track) -> ImageBitmap? = { null },
+    loadArtwork: suspend (Uri) -> ImageBitmap? = { null }
 ) {
     val view = remember(state) { deriveLibraryView(state) }
     val favoriteIds = remember(state.favorites) {
         LibraryGrouping.parseFavoriteIds(state.favorites)
     }
     val detail = state.detail
+
+    // 两个弹窗的目标是页面级局部状态：旋屏后重新左滑即可，不需要跨页面持久化。
+    var editingTrack by remember { mutableStateOf<Track?>(null) }
+    var deleteTarget by remember { mutableStateOf<Track?>(null) }
 
     val unknownAlbum = stringResource(R.string.library_unknown_album)
     val unknownArtist = stringResource(R.string.library_unknown_artist)
@@ -214,11 +232,7 @@ fun LibraryScreen(
                                 val representative = state.tracks.firstOrNull {
                                     it.id == group.representativeId
                                 }
-                                value = if (representative != null) {
-                                    resolveArtwork(group.albumId, representative.uri)
-                                } else {
-                                    null
-                                }
+                                value = representative?.let { resolveArtwork(it) }
                             }
                             LibraryGroupCard(
                                 name = group.key.ifEmpty {
@@ -243,9 +257,10 @@ fun LibraryScreen(
                         items(view.tracks, key = { it.id }) { track ->
                             val artwork by produceState<ImageBitmap?>(
                                 initialValue = null,
-                                key1 = track.id
+                                key1 = track.id,
+                                key2 = track.artworkUri
                             ) {
-                                value = resolveArtwork(track.albumId, track.uri)
+                                value = resolveArtwork(track)
                             }
                             TrackListItem(
                                 track = track,
@@ -253,6 +268,8 @@ fun LibraryScreen(
                                 isFavorite = track.id in favoriteIds,
                                 onToggleFavorite = { onToggleFavorite(track.id.toString()) },
                                 onClick = { onTrackClick(track, view.tracks) },
+                                onEditClick = { editingTrack = track },
+                                onDeleteClick = { deleteTarget = track },
                                 onDeleteRequest = { mode -> onDeleteRequest(track, mode) }
                             )
                         }
@@ -261,6 +278,25 @@ fun LibraryScreen(
             }
 
             if (detail == null) {
+                // 「仅从列表移除」是可逆操作：常驻一个恢复入口，避免文件被误以为删掉了。
+                if (state.hiddenCount > 0 && state.selectedTab == 0) {
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.library_hidden_count, state.hiddenCount),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.weight(1f)
+                            )
+                            TextButton(onClick = onRestoreHidden) {
+                                Text(stringResource(R.string.library_restore_hidden))
+                            }
+                        }
+                    }
+                }
                 item {
                     Text(
                         text = stringResource(R.string.library_design_notes_action),
@@ -270,6 +306,33 @@ fun LibraryScreen(
                 }
             }
         }
+    }
+
+    editingTrack?.let { track ->
+        TrackEditDialog(
+            track = track,
+            onDismiss = { editingTrack = null },
+            onSave = { name, description, artworkSource, removeArtwork ->
+                onSaveEdit(track.id, name, description, artworkSource, removeArtwork)
+            },
+            resolveArtwork = resolveArtwork,
+            loadArtwork = loadArtwork
+        )
+    }
+
+    deleteTarget?.let { track ->
+        TrackDeleteDialog(
+            track = track,
+            canTrash = canTrash,
+            onDismiss = { deleteTarget = null },
+            onRemoveFromList = { onRemoveFromList(track) },
+            onDeleteFile = {
+                onDeleteRequest(
+                    track,
+                    if (canTrash) DeleteMode.Trash else DeleteMode.Permanent
+                )
+            }
+        )
     }
 }
 

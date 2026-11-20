@@ -3,6 +3,8 @@ package com.shiyin.player.di
 import android.content.Context
 import com.shiyin.player.data.local.AlbumArtResolver
 import com.shiyin.player.data.local.MediaStoreAudioDataSource
+import com.shiyin.player.data.local.TrackArtworkResolver
+import com.shiyin.player.data.local.TrackArtworkStore
 import com.shiyin.player.data.media.LinkDownloadRepository
 import com.shiyin.player.data.media.MediaDeleteRepository
 import com.shiyin.player.data.media.MediaEditRepository
@@ -24,8 +26,13 @@ class AppContainer(context: Context) {
     val preferences: ShiyinPreferences by lazy { ShiyinPreferences(appContext) }
     val audioDataSource: MediaStoreAudioDataSource by lazy { MediaStoreAudioDataSource(appContext) }
     val albumArtResolver: AlbumArtResolver by lazy { AlbumArtResolver(appContext) }
+    // 曲目编辑的自定义海报存应用私有目录；解析时优先于 MediaStore 封面。
+    val artworkStore: TrackArtworkStore by lazy { TrackArtworkStore(appContext) }
+    val trackArtworkResolver: TrackArtworkResolver by lazy {
+        TrackArtworkResolver(appContext, albumArtResolver)
+    }
     val libraryRepository: LibraryRepository by lazy {
-        LibraryRepository(audioDataSource, preferences)
+        LibraryRepository(audioDataSource, preferences, artworkStore)
     }
     val playlistRepository: PlaylistRepository by lazy { PlaylistRepository(preferences) }
     val playerController: PlayerController by lazy { PlayerController(appContext) }

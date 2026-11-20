@@ -20,7 +20,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 enum class Glyph {
     Back, Close, Play, Pause, Next, Previous,
     Scan, Link, Trim, Extract, Music, Info, Search, Playlist,
-    Favorite, FavoriteFilled, Chevron, Download
+    Favorite, FavoriteFilled, Chevron, Download,
+    Edit, Delete
 }
 
 @Composable
@@ -204,6 +205,35 @@ private fun DrawScope.drawGlyph(glyph: Glyph, color: Color) {
             drawLine(color, Offset(w * 0.30f, h * 0.44f), Offset(w * 0.50f, h * 0.64f), line, StrokeCap.Round)
             drawLine(color, Offset(w * 0.70f, h * 0.44f), Offset(w * 0.50f, h * 0.64f), line, StrokeCap.Round)
             drawLine(color, Offset(w * 0.22f, h * 0.80f), Offset(w * 0.78f, h * 0.80f), line, StrokeCap.Round)
+        }
+
+        Glyph.Edit -> {
+            // 方框 + 斜置铅笔，表示「编辑曲目信息」。
+            drawRoundRect(
+                color = color,
+                topLeft = Offset(w * 0.18f, h * 0.24f),
+                size = Size(w * 0.52f, h * 0.58f),
+                cornerRadius = CornerRadius(w * 0.05f),
+                style = Stroke(width = line)
+            )
+            drawLine(color, Offset(w * 0.40f, h * 0.66f), Offset(w * 0.76f, h * 0.30f), line * 1.3f, StrokeCap.Round)
+            drawLine(color, Offset(w * 0.70f, h * 0.24f), Offset(w * 0.82f, h * 0.36f), line * 1.3f, StrokeCap.Round)
+        }
+
+        Glyph.Delete -> {
+            // 桶盖 + 桶身 + 竖向纹理，表示「删除」。
+            drawLine(color, Offset(w * 0.20f, h * 0.28f), Offset(w * 0.80f, h * 0.28f), line, StrokeCap.Round)
+            drawLine(color, Offset(w * 0.38f, h * 0.28f), Offset(w * 0.44f, h * 0.18f), line, StrokeCap.Round)
+            drawLine(color, Offset(w * 0.62f, h * 0.28f), Offset(w * 0.56f, h * 0.18f), line, StrokeCap.Round)
+            drawRoundRect(
+                color = color,
+                topLeft = Offset(w * 0.28f, h * 0.34f),
+                size = Size(w * 0.44f, h * 0.52f),
+                cornerRadius = CornerRadius(w * 0.05f),
+                style = Stroke(width = line)
+            )
+            drawLine(color, Offset(w * 0.44f, h * 0.46f), Offset(w * 0.44f, h * 0.74f), line * 0.8f, StrokeCap.Round)
+            drawLine(color, Offset(w * 0.56f, h * 0.46f), Offset(w * 0.56f, h * 0.74f), line * 0.8f, StrokeCap.Round)
         }
     }
 }
