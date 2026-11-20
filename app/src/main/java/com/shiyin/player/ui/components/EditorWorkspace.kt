@@ -43,7 +43,7 @@ import com.shiyin.player.ui.theme.ProvisionalDimens
 import com.shiyin.player.ui.theme.ShiyinDimens
 
 /**
- * 05 音乐裁剪 / 06 视频提取音频的共用工作区。
+ * 「音频编辑」统一入口（音频裁剪 / 提取音频两个 Tab）的共用工作区。
  *
  * 纯本地处理，不含网络相关入口。
  * 所有尺寸取自 ProvisionalDimens / ShiyinDimens，屏幕层零魔数。

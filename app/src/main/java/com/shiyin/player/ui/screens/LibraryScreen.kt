@@ -122,8 +122,8 @@ fun LibraryScreen(
         QuickTool(stringResource(R.string.scan_local), Routes.SCAN, Glyph.Scan),
         QuickTool(stringResource(R.string.playlist_title), Routes.PLAYLIST, Glyph.Playlist),
         QuickTool(stringResource(R.string.link_download), Routes.LINK_DOWNLOAD, Glyph.Link),
-        QuickTool(stringResource(R.string.music_trim), Routes.TRIM, Glyph.Trim),
-        QuickTool(stringResource(R.string.extract_audio), Routes.EXTRACT, Glyph.Extract)
+        // 音频裁剪与视频提取音频合并为「音频编辑」单一入口，进入后用 Tab 切换。
+        QuickTool(stringResource(R.string.audio_editor), Routes.AUDIO_EDITOR, Glyph.AudioEditor)
     )
 
     ShiyinScaffold(

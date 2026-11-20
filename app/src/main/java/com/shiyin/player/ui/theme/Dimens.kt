@@ -34,7 +34,7 @@ object ProvisionalDimens {
     val CardInnerPadding = 16.dp // PROVISIONAL
 
     val QuickToolCardHeight = 88.dp // PROVISIONAL
-    // 快捷工具改为等分铺满（不再横向滚动）：4→5 个入口后固定 84dp 宽会把最后一个挤出首屏。
+    // 快捷工具等分铺满（不再横向滚动）：入口多时固定 84dp 宽会把最后一个挤出首屏；当前 4 个入口。
     val QuickToolSpacing = 8.dp // PROVISIONAL：等分卡片之间的间距
     val QuickToolIconLabelGap = 6.dp // PROVISIONAL：图标与两行标签之间的间距
     val TrackListItemHeight = 72.dp // PROVISIONAL

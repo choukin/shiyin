@@ -21,7 +21,7 @@ enum class Glyph {
     Back, Close, Play, Pause, Next, Previous,
     Scan, Link, Trim, Extract, Music, Info, Search, Playlist,
     Favorite, FavoriteFilled, Chevron, Download,
-    Edit, Delete
+    Edit, Delete, AudioEditor
 }
 
 @Composable
@@ -234,6 +234,22 @@ private fun DrawScope.drawGlyph(glyph: Glyph, color: Color) {
             )
             drawLine(color, Offset(w * 0.44f, h * 0.46f), Offset(w * 0.44f, h * 0.74f), line * 0.8f, StrokeCap.Round)
             drawLine(color, Offset(w * 0.56f, h * 0.46f), Offset(w * 0.56f, h * 0.74f), line * 0.8f, StrokeCap.Round)
+        }
+
+        Glyph.AudioEditor -> {
+            // 左半波形 + 右上斜置铅笔，表示「编辑音频」（裁剪 / 提取的合并入口）。
+            listOf(0.20f, 0.34f, 0.48f).forEachIndexed { index, x ->
+                val amplitude = h * (0.16f + (index % 2) * 0.12f)
+                drawLine(
+                    color,
+                    Offset(w * x, h * 0.52f - amplitude),
+                    Offset(w * x, h * 0.52f + amplitude),
+                    line,
+                    StrokeCap.Round
+                )
+            }
+            drawLine(color, Offset(w * 0.52f, h * 0.66f), Offset(w * 0.84f, h * 0.30f), line * 1.3f, StrokeCap.Round)
+            drawLine(color, Offset(w * 0.76f, h * 0.24f), Offset(w * 0.88f, h * 0.36f), line * 1.3f, StrokeCap.Round)
         }
     }
 }

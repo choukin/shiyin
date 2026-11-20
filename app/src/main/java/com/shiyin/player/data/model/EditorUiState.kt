@@ -42,8 +42,22 @@ sealed interface ExportState {
     data class Failure(val message: String) : ExportState
 }
 
-/** 06 屏：整段提取 or 所选片段。 */
+/** 提取模式：整段提取 or 所选片段。 */
 enum class ExtractMode { WHOLE, RANGE }
+
+/**
+ * 「音频编辑」统一入口下的两个工具，由页面顶部 Tab 切换。
+ * 二者共用同一条编辑管线，仅 removeVideo（导出时是否去掉视频轨）与默认模式不同：
+ * - [TRIM] 音频裁剪：处理音频源，固定按选区裁剪；
+ * - [EXTRACT] 提取音频：处理视频源，默认整段、可选片段。
+ */
+enum class EditorTool(
+    val removeVideo: Boolean,
+    val defaultMode: ExtractMode
+) {
+    TRIM(removeVideo = false, defaultMode = ExtractMode.RANGE),
+    EXTRACT(removeVideo = true, defaultMode = ExtractMode.WHOLE)
+}
 
 /**
  * 错误类型用枚举而非裸字符串：所有 UI 文案集中在 strings.xml，
@@ -52,10 +66,13 @@ enum class ExtractMode { WHOLE, RANGE }
 enum class EditorError { NO_SOURCE, NO_AUDIO, PROBE_FAILED, EXPORT_FAILED }
 
 /**
- * 05 音乐裁剪 / 06 视频提取音频共用状态。
- * 两者管线相同（Media3 Transformer + ClippingConfiguration），仅 removeVideo 与 mode 不同。
+ * 「音频编辑」统一入口的共用状态（音频裁剪 / 提取音频两个 Tab 复用）。
+ * 两者管线相同（Media3 Transformer + ClippingConfiguration），
+ * 仅 [tool] 携带的 removeVideo 与默认 mode 不同。
  */
 data class EditorUiState(
+    /** 当前激活的工具 Tab，决定 select 文件类型、默认模式与导出语义。 */
+    val tool: EditorTool = EditorTool.TRIM,
     val source: MediaSource? = null,
     val waveform: List<Float> = emptyList(),
     val clipRange: ClipRange = ClipRange(0L, 0L),

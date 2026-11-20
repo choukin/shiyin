@@ -8,6 +8,11 @@
     <string name="scan_local">扫描本机</string>
     <!-- 04 下载：由「链接下载」改名，工具名现覆盖搜歌 + 直链 + 本地导入 -->
     <string name="link_download">下载</string>
+    <!-- 「音频编辑」统一入口：一个入口 + 两个 Tab（裁剪 / 提取） -->
+    <string name="audio_editor">音频编辑</string>
+    <string name="audio_editor_tab_trim">音频裁剪</string>
+    <string name="audio_editor_tab_extract">提取音频</string>
+    <!-- 旧入口文案，保留供设计说明等引用；首页已合并为上面的统一入口 -->
     <string name="music_trim">音乐裁剪</string>
     <string name="extract_audio">视频提取音频</string>
     <string name="feature_phase_two">二期开放</string>
@@ -150,7 +155,7 @@
     <string name="download_error_preview">试听失败，请稍后重试</string>
     <string name="download_error_detail">技术信息：%1$s</string>
 
-    <!-- 05 音乐裁剪 / 06 视频提取音频（二期真实实现，共用工作区） -->
+    <!-- 音频编辑（音频裁剪 / 提取音频，二期真实实现，共用工作区） -->
     <string name="trim_body">选择本机音频，在真实波形上拖动滑块选取片段，按需设置文件名与导出格式后保存到音乐库。</string>
     <string name="extract_body">选择本机视频，按整段或所选片段提取音频，按需设置文件名与导出格式后保存到音乐库。</string>
     <string name="editor_pick_audio">选择音频文件</string>

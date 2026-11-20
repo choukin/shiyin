@@ -18,18 +18,16 @@ import androidx.navigation.compose.rememberNavController
 import com.shiyin.player.data.media.ClipPreviewPlayer
 import com.shiyin.player.data.media.MediaDeleteRepository.DeleteMode
 import com.shiyin.player.data.media.SearchPreviewPlayer
-import com.shiyin.player.data.model.ExtractMode
 import com.shiyin.player.data.model.PermissionState
 import com.shiyin.player.data.permission.Permissions
 import com.shiyin.player.di.AppContainer
+import com.shiyin.player.ui.screens.AudioEditorScreen
 import com.shiyin.player.ui.screens.DesignNotesScreen
 import com.shiyin.player.ui.screens.EditorViewModel
-import com.shiyin.player.ui.screens.ExtractAudioScreen
 import com.shiyin.player.ui.screens.LibraryScreen
 import com.shiyin.player.ui.screens.LinkDownloadViewModel
 import com.shiyin.player.ui.screens.LibraryViewModel
 import com.shiyin.player.ui.screens.LinkDownloadScreen
-import com.shiyin.player.ui.screens.MusicTrimScreen
 import com.shiyin.player.ui.screens.PlaylistScreen
 import com.shiyin.player.ui.screens.PlaylistViewModel
 import com.shiyin.player.ui.screens.PlayerScreen
@@ -45,7 +43,7 @@ private inline fun <reified VM : ViewModel> viewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T = create() as T
 }
 
-/** 8 条路由的导航图。所有屏幕都通过 AppContainer 取数据与播放控制，无全局单例。 */
+/** 8 条路由的导航图（裁剪/提取已合并为「音频编辑」入口）。所有屏幕都通过 AppContainer 取数据与播放控制，无全局单例。 */
 @Composable
 fun ShiyinNavHost(
     container: AppContainer,
@@ -214,52 +212,22 @@ fun ShiyinNavHost(
             )
         }
 
-        // 05 / 06 共用 EditorViewModel，仅 removeVideo 与默认模式不同。
-        composable(Routes.TRIM) {
+        // 「音频编辑」单一入口：音频裁剪 / 提取音频两个 Tab 共用同一个 EditorViewModel，
+        // 差异（removeVideo、默认模式、文件类型）由 EditorTool 在运行时决定并随 Tab 重置。
+        composable(Routes.AUDIO_EDITOR) {
             val vm: EditorViewModel = viewModel(
                 factory = viewModelFactory<EditorViewModel> {
                     EditorViewModel(
                         repository = container.mediaEditRepository,
                         waveformExtractor = container.waveformExtractor,
-                        previewPlayer = ClipPreviewPlayer(context.applicationContext),
-                        removeVideo = false,
-                        defaultMode = ExtractMode.RANGE
+                        previewPlayer = ClipPreviewPlayer(context.applicationContext)
                     )
                 }
             )
             val state by vm.uiState.collectAsStateWithLifecycle()
-            MusicTrimScreen(
+            AudioEditorScreen(
                 state = state,
-                onSourceSelected = vm::onSourceSelected,
-                onRangeChange = vm::onRangeChange,
-                onExportFileNameChange = vm::onExportFileNameChange,
-                onExportFormatChange = vm::onExportFormatChange,
-                onExport = vm::export,
-                onResetExport = vm::resetExportState,
-                onConsumeError = vm::consumeError,
-                onTogglePreview = vm::togglePreview,
-                onStopPreview = vm::stopPreview,
-                onAttachVideo = vm::attachVideoView,
-                onDetachVideo = vm::detachVideoView,
-                onBack = { navController.popBackStack() }
-            )
-        }
-
-        composable(Routes.EXTRACT) {
-            val vm: EditorViewModel = viewModel(
-                factory = viewModelFactory<EditorViewModel> {
-                    EditorViewModel(
-                        repository = container.mediaEditRepository,
-                        waveformExtractor = container.waveformExtractor,
-                        previewPlayer = ClipPreviewPlayer(context.applicationContext),
-                        removeVideo = true,
-                        defaultMode = ExtractMode.WHOLE
-                    )
-                }
-            )
-            val state by vm.uiState.collectAsStateWithLifecycle()
-            ExtractAudioScreen(
-                state = state,
+                onToolChange = vm::onToolChange,
                 onSourceSelected = vm::onSourceSelected,
                 onRangeChange = vm::onRangeChange,
                 onModeChange = vm::onModeChange,

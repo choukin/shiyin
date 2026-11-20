@@ -9,6 +9,7 @@ import com.shiyin.player.data.media.MediaEditRepository
 import com.shiyin.player.data.media.WaveformExtractor
 import com.shiyin.player.data.model.AudioFormat
 import com.shiyin.player.data.model.EditorError
+import com.shiyin.player.data.model.EditorTool
 import com.shiyin.player.data.model.EditorUiState
 import com.shiyin.player.data.model.ExportState
 import com.shiyin.player.data.model.ExtractMode
@@ -20,8 +21,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * 05 音乐裁剪 / 06 视频提取音频共用 ViewModel。
- * 两者只差 removeVideo 与默认模式，管线（probe → 波形 → clipping → Transformer）完全一致。
+ * 「音频编辑」统一入口（音频裁剪 / 提取音频两个 Tab）共用 ViewModel。
+ * 两者共用 probe → 波形 → clipping → Transformer 管线，差异全部收敛到 [EditorTool]：
+ * removeVideo、默认模式都从当前 tool 读取，Tab 切换由 [onToolChange] 重置干净状态。
  *
  * 试听预览由独立的 [ClipPreviewPlayer] 承担，与后台曲库播放会话隔离；
  * ViewModel 负责把播放器回调映射进 EditorUiState，并在生命周期结束时释放。
@@ -30,11 +32,12 @@ class EditorViewModel(
     private val repository: MediaEditRepository,
     private val waveformExtractor: WaveformExtractor,
     private val previewPlayer: ClipPreviewPlayer,
-    private val removeVideo: Boolean,
-    defaultMode: ExtractMode = ExtractMode.RANGE
+    initialTool: EditorTool = EditorTool.TRIM
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(EditorUiState(mode = defaultMode))
+    private val _uiState = MutableStateFlow(
+        EditorUiState(tool = initialTool, mode = initialTool.defaultMode)
+    )
     val uiState: StateFlow<EditorUiState> = _uiState.asStateFlow()
 
     init {
@@ -105,6 +108,17 @@ class EditorViewModel(
         _uiState.update { it.copy(mode = mode, exportState = ExportState.Idle) }
     }
 
+    /**
+     * 顶部 Tab 切换裁剪 / 提取：两条管线的源文件类型与导出语义不同，
+     * 必须整体回到初始态，避免把上一个 Tab 的音频源、选区或导出结果带进新 Tab。
+     * 默认模式随新工具走（裁剪=RANGE，提取=WHOLE）。
+     */
+    fun onToolChange(tool: EditorTool) {
+        if (_uiState.value.tool == tool) return
+        previewPlayer.stop()
+        _uiState.value = EditorUiState(tool = tool, mode = tool.defaultMode)
+    }
+
     fun onExportFileNameChange(name: String) {
         _uiState.update { it.copy(exportFileName = name, exportState = ExportState.Idle) }
     }
@@ -166,7 +180,7 @@ class EditorViewModel(
             repository.exportAudio(
                 sourceUri = source.uri,
                 clipRange = range,
-                removeVideo = removeVideo,
+                removeVideo = current.tool.removeVideo,
                 baseName = source.displayName,
                 customName = current.exportFileName,
                 format = current.exportFormat
