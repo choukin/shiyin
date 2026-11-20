@@ -17,6 +17,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.shiyin.player.data.media.ClipPreviewPlayer
 import com.shiyin.player.data.media.MediaDeleteRepository.DeleteMode
+import com.shiyin.player.data.media.SearchPreviewPlayer
 import com.shiyin.player.data.model.ExtractMode
 import com.shiyin.player.data.model.PermissionState
 import com.shiyin.player.data.permission.Permissions
@@ -174,19 +175,31 @@ fun ShiyinNavHost(
             )
         }
 
-        // 04：真实链接下载（OkHttp 直链 GET → 音乐库），次要入口保留 SAF 本地导入。
+        // 04 下载：主入口搜歌（POST 搜索 → 独立 ExoPlayer 试听 → 下载入库），
+        // 次要入口保留直链下载与 SAF 本地导入。
         composable(Routes.LINK_DOWNLOAD) {
             val vm: LinkDownloadViewModel = viewModel(
                 factory = viewModelFactory<LinkDownloadViewModel> {
                     LinkDownloadViewModel(
                         downloadRepository = container.linkDownloadRepository,
-                        mediaEditRepository = container.mediaEditRepository
+                        mediaEditRepository = container.mediaEditRepository,
+                        searchRepository = container.musicSearchRepository,
+                        previewPlayer = SearchPreviewPlayer(context.applicationContext)
                     )
                 }
             )
             val state by vm.uiState.collectAsStateWithLifecycle()
             LinkDownloadScreen(
                 state = state,
+                onModeChange = vm::onModeChange,
+                onQueryChange = vm::onQueryChange,
+                onSearch = vm::search,
+                onLoadMore = vm::loadMore,
+                onPreviewClick = vm::onPreviewClick,
+                onStopPreview = vm::stopPreview,
+                onDownloadSong = vm::downloadSong,
+                onDismissSaved = vm::dismissSaved,
+                onConsumeSearchError = vm::consumeSearchError,
                 onUrlChange = vm::onUrlChange,
                 onDownload = vm::download,
                 onCancel = vm::cancel,

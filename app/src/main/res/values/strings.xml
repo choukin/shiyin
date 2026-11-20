@@ -6,8 +6,8 @@
     <string name="quick_tools">快捷工具</string>
     <string name="recently_added">最近添加</string>
     <string name="scan_local">扫描本机</string>
-    <!-- 04 二期恢复设计稿原名「链接下载」，name 保持设计稿约定不变 -->
-    <string name="link_download">链接下载</string>
+    <!-- 04 下载：由「链接下载」改名，工具名现覆盖搜歌 + 直链 + 本地导入 -->
+    <string name="link_download">下载</string>
     <string name="music_trim">音乐裁剪</string>
     <string name="extract_audio">视频提取音频</string>
     <string name="feature_phase_two">二期开放</string>
@@ -82,7 +82,7 @@
 
     <!-- 04 链接下载（二期真实实现：直链下载为主，SAF 本地导入为次要入口） -->
     <string name="link_download_body">粘贴音频或视频文件的直链地址，拾音会下载并保存到本机音乐库。支持 mp3 / m4a / wav / flac / ogg / mp4 等常见格式。</string>
-    <string name="link_download_notice">仅处理直接指向媒体文件的 http(s) 地址；不解析网页、不嗅探页面内的媒体地址、不上传任何内容。</string>
+    <string name="link_download_notice">直链模式仅处理直接指向媒体文件的 http(s) 地址，不解析网页内容、不上传任何内容。</string>
     <string name="link_download_label">文件直链</string>
     <string name="link_download_hint">https://example.com/song.mp3</string>
     <string name="link_download_action">下载到曲库</string>
@@ -101,6 +101,38 @@
     <string name="link_error_empty">下载内容为空，请检查地址</string>
     <string name="link_error_write_failed">保存到音乐库失败，请重试</string>
     <string name="link_error_import_failed">导入失败，请确认文件可读后重试</string>
+
+    <!-- 04 下载：搜歌模式（myfreemp3 公开接口 → 试听 / 下载入库） -->
+    <string name="download_tab_search">搜歌</string>
+    <string name="download_tab_link">直链</string>
+    <string name="download_search_body">输入歌曲名或歌手搜索，结果可直接试听，或下载保存到本机音乐库。</string>
+    <string name="download_notice">搜索与试听需要联网。结果来自第三方公开接口，请遵守来源站点与版权方的使用条款，仅限个人使用。</string>
+    <string name="download_source_hint">当前来源：网易云（每页 10 条）</string>
+    <string name="download_search_label">歌曲名或歌手</string>
+    <string name="download_search_hint">例如：周杰伦</string>
+    <string name="download_search_action">搜索</string>
+    <string name="download_searching">正在搜索…</string>
+    <string name="download_results_count">共 %1$d 首结果</string>
+    <string name="download_load_more">加载更多</string>
+    <string name="download_loading_more">正在加载下一页…</string>
+    <string name="download_empty_title">没有找到相关歌曲</string>
+    <string name="download_empty_body">换个关键词试试，或检查网络后重新搜索</string>
+    <string name="download_idle_title">找一首想下载的歌</string>
+    <string name="download_idle_body">输入歌曲名或歌手开始搜索，结果可先试听再决定是否保存</string>
+    <string name="download_action_preview">试听</string>
+    <string name="download_action_pause">暂停试听</string>
+    <string name="download_action_download">下载</string>
+    <string name="download_preview_now">正在试听：%1$s</string>
+    <string name="download_preview_progress">%1$s / %2$s</string>
+    <string name="download_preview_stop">停止</string>
+    <string name="download_saving">正在下载到音乐库…</string>
+    <string name="download_saved">已保存 %1$s 到音乐库</string>
+    <string name="download_cancel">取消下载</string>
+    <string name="download_error_empty_query">请输入歌曲名或歌手</string>
+    <string name="download_error_search">搜索失败，请稍后重试</string>
+    <string name="download_error_empty">没有找到相关歌曲</string>
+    <string name="download_error_preview">试听失败，请稍后重试</string>
+    <string name="download_error_detail">技术信息：%1$s</string>
 
     <!-- 05 音乐裁剪 / 06 视频提取音频（二期真实实现，共用工作区） -->
     <string name="trim_body">选择本机音频，在真实波形上拖动滑块选取片段，按需设置文件名与导出格式后保存到音乐库。</string>
@@ -152,6 +184,6 @@
     <string name="design_notes_state_export">导出成功提示（二期真实实现）</string>
     <string name="design_notes_license_title">字体许可</string>
     <string name="design_notes_license">Noto Sans SC / Geist Mono 均为 SIL OFL 1.1；许可原文待补入 docs/licenses/，字体二进制待补入 res/font/。</string>
-    <string name="design_notes_copyright_title">链接下载说明</string>
-    <string name="design_notes_copyright">04 链接下载仅对用户显式粘贴的媒体直链发起 GET：不解析第三方平台页面、不嗅探媒体地址、不上传数据。为此新增 INTERNET / ACCESS_NETWORK_STATE 权限，其余页面仍为纯本地实现。</string>
+    <string name="design_notes_copyright_title">下载与来源说明</string>
+    <string name="design_notes_copyright">04 下载的搜歌结果来自第三方公开接口，仅供个人试听与保存；请遵守来源站点与版权方条款。直链模式只处理用户显式粘贴的媒体地址，不上传数据。为此新增 INTERNET / ACCESS_NETWORK_STATE 权限，其余页面仍为纯本地实现。</string>
 </resources>

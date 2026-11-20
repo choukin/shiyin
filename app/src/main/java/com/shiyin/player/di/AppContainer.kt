@@ -6,6 +6,7 @@ import com.shiyin.player.data.local.MediaStoreAudioDataSource
 import com.shiyin.player.data.media.LinkDownloadRepository
 import com.shiyin.player.data.media.MediaDeleteRepository
 import com.shiyin.player.data.media.MediaEditRepository
+import com.shiyin.player.data.media.MusicSearchRepository
 import com.shiyin.player.data.media.WaveformExtractor
 import com.shiyin.player.data.prefs.ShiyinPreferences
 import com.shiyin.player.data.repository.LibraryRepository
@@ -34,8 +35,11 @@ class AppContainer(context: Context) {
     // 二期：05/06 纯本地的波形提取与媒体编辑管线。
     val waveformExtractor: WaveformExtractor by lazy { WaveformExtractor(appContext) }
     val mediaEditRepository: MediaEditRepository by lazy { MediaEditRepository(appContext) }
-    // 二期：04 链接下载，OkHttp 直链 GET → 缓存 → 复用 mediaEditRepository 入库。
+    // 二期：04 下载，OkHttp 直链 GET → 缓存 → 复用 mediaEditRepository 入库。
     val linkDownloadRepository: LinkDownloadRepository by lazy {
         LinkDownloadRepository(appContext, mediaEditRepository)
     }
+    // 04 下载页「搜歌」：OkHttp POST myfreemp3 公开接口，返回列表供试听 / 下载。
+    // 试听播放器带生命周期，由 ViewModel 持有，不放进全局容器（与 ClipPreviewPlayer 同策略）。
+    val musicSearchRepository: MusicSearchRepository by lazy { MusicSearchRepository() }
 }

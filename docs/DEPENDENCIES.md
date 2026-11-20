@@ -20,7 +20,7 @@
 | datastore-preferences | **1.3.0** | `<latest>/<release>` 一致（规划稿曾写 1.2.1） |
 | Coil 3 coil-compose | 3.6.3 | Maven Central `<latest>/<release>` 一致 |
 | kotlinx-coroutines | 1.11.0 | Maven Central `<latest>/<release>` 一致 |
-| **OkHttp** | **5.5.1** | Maven Central 最新稳定（核实 2026-11-19，`5.0.0-alpha.*` 为预发布不采用）；仅 04 直链下载使用 |
+| **OkHttp** | **5.5.1** | Maven Central 最新稳定（核实 2026-11-19，`5.0.0-alpha.*` 为预发布不采用）；04 下载页的搜索 POST 与直链 GET 共用，其余页面不使用 |
 | JUnit | 4.13.2 | Maven Central `<latest>/<release>` 一致 |
 | material3 | **1.4.0** | 最新稳定；但由 BOM 管理，`[libraries]` 行**不写版本** |
 | JDK / Java | 17 / jvmTarget 17 | 本机 17.0.19 满足 |
@@ -50,7 +50,7 @@
 | DI | 手动 `AppContainer`，**不引 Hilt/Koin/KSP** | `MediaSessionService` 由系统实例化无法构造注入；单模块小项目零注解处理器＝零构建失败面 |
 | 权限请求 | `activity-compose` 自带 `rememberLauncherForActivityResult` + `ActivityResultContracts`，**不引 Accompanist** | Accompanist 大部分模块已废弃迁移到官方 Compose；权限逻辑本就应在 Screen 层 |
 | 播放 UI | **不引 `media3-ui` / `media3-ui-compose`** | 07 屏按设计稿用 Compose 自绘，View 体系 `PlayerView` 反而是负担 |
-| 封面网络层 | **不引 `coil-network-okhttp` / `coil-svg`** | 封面只加载 MediaStore `content://` URI。二期虽引入 OkHttp，但仅由 04 的 `LinkDownloadRepository` 直接使用，不给 Coil 接网络图片能力 |
+| 封面网络层 | **不引 `coil-network-okhttp` / `coil-svg`** | 封面只加载 MediaStore `content://` URI。OkHttp 仅由 04 的搜索/下载 Repository 直接使用，不给 Coil 接网络图片能力；搜歌结果的 `pic` 也不加载，列表统一用自绘音符图标 |
 | 字体 | `.ttf/.otf` **离线打包进 `res/font`**，不引 `ui-text-google-fonts` | 可下载字体依赖 GMS + 联网，违背离线字体基线 |
 | 矢量素材 | Compose `Canvas` + `Brush` 自绘 + 少量 vector drawable，**不引 SVG 渲染库/波形库** | 设计稿的 SVG 是设计元素，Android 不吃 SVG；渐变用 `Brush` 更贴近且零依赖 |
 
@@ -70,7 +70,8 @@ Robolectric、Espresso、Retrofit / WorkManager / 其他网络库。
 | 视频提取音频（06） | 同上 | `EditedMediaItem.Builder(...).setRemoveVideo(true)` |
 | 真实 PCM 波形 | `android.media.MediaCodec` 解码 RMS | `WaveformExtractor`，解码失败降级到一期静态波形 |
 | 本地导入（04 次要入口） | SAF `ActivityResultContracts.OpenDocument` | `MediaEditRepository.importAudio`，原样复制进音乐库 |
-| **链接下载（04 主入口）** | `com.squareup.okhttp3:okhttp:5.5.1` + `INTERNET` | `LinkDownloadRepository`：直链 GET → 缓存文件（真实进度/可取消）→ 类型与 300MB 校验 → `publishFile` 写音乐库；`DownloadLink` 负责纯逻辑 URL/文件名/MIME 判定 |
+| **搜歌（04 主入口）** | `com.squareup.okhttp3:okhttp:5.5.1` + `org.json`（Android 内置）+ Media3 ExoPlayer | `MusicSearchRepository`：POST myfreemp3 表单 → 解析 `data.list` → `SearchLink.forceHttps` 规范化播放地址；`SearchPreviewPlayer` 独立试听；下载仍走 `LinkDownloadRepository`，用 `SearchLink.displayName` 生成「歌名 - 歌手.mp3」 |
+| **直链下载（04 次要入口）** | 同上 OkHttp + `INTERNET` | `LinkDownloadRepository`：直链 GET → 缓存文件（真实进度/可取消）→ 类型与 300MB 校验 → `publishFile` 写音乐库；`DownloadLink` 负责纯逻辑 URL/文件名/MIME 判定 |
 | 导出 | MediaStore `Audio.Media` + `IS_PENDING` | 写入 `Music/Shiyin`，完成后清 pending，曲库立即可见；失败会删除 pending 记录 |
 
 > **API 实测更正**：
@@ -104,7 +105,7 @@ Robolectric、Espresso、Retrofit / WorkManager / 其他网络库。
 | `READ_EXTERNAL_STORAGE` + `maxSdkVersion="32"` | ≤32 | 运行时 | 与上者二选一生效；`RequestMultiplePermissions` 可同时传 |
 | `FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_MEDIA_PLAYBACK` | ≥34 成对强制 | 安装时 | 对应 `foregroundServiceType="mediaPlayback"` |
 | `POST_NOTIFICATIONS` | ≥33 | 运行时 | **媒体会话通知对此权限豁免**，拒绝不阻断播放；首次点播放时非阻塞请求 |
-| `INTERNET` | 全部 | 安装时 | 二期 04 链接下载专用；仅对用户粘贴的直链发 GET，不上传数据 |
+| `INTERNET` | 全部 | 安装时 | 04 下载页专用：搜歌 POST、试听流、直链 GET；不上传用户数据 |
 | `ACCESS_NETWORK_STATE` | 全部 | 安装时 | 下载前用 `ConnectivityManager` 判网络，避免无网时干等超时 |
 | `WAKE_LOCK` | — | — | 未声明，Media3/ExoPlayer 内部已处理播放期持锁 |
 
@@ -120,7 +121,8 @@ Robolectric、Espresso、Retrofit / WorkManager / 其他网络库。
 |---|---|
 | 版本组合 | **已实测**：Mac + JDK 17 + Gradle 9.6.0 + AGP 9.5.1 + Kotlin 2.4.21 + OkHttp 5.5.1 下 `assembleDebug` / `testDebugUnitTest` 全通过；API 36 模拟器已装包验收 |
 | `compileSdk 37` 需 Android 17 平台 | 本机已装 `platforms/android-37.0`；`BUILD.md` 已更新为真实构建状态 |
-| 链接下载来源合规 | **按需求于 2026-11-19 实现真实下载**：技术上只接受用户显式粘贴的媒体直链、拒绝 HTML 与非媒体类型；内容来源合法性由使用者负责，上线前需内容合规与隐私政策评审 |
+| 下载来源合规 | **2026-11-20 扩展为搜歌 + 直链**：搜歌结果来自第三方公开接口，需确认站点服务条款允许客户端调用；直链只接受用户显式粘贴的媒体地址、拒绝 HTML 与非媒体类型。内容来源合法性由使用者负责，上线前需内容合规与隐私政策评审 |
+| 第三方接口稳定性 | 站点在空结果 / 风控时返回 HTML、`type=ws` 返回 403、播放地址需 http→https 规范化；解析层已容错，但接口变更或下线会导致搜歌不可用，直链与本地功能不受影响 |
 | 明文 HTTP | `usesCleartextTraffic=true` 放通所有明文；上线前建议改为域名白名单，或仅允许 https 直链 |
 | 大文件 / 取消 | 单文件上限 300MB、循环内 `ensureActive()`，失败删除缓存与 MediaStore pending 记录 |
 | 字体体积/授权 | Noto Sans SC 全字集数 MB～十几 MB，只取 2–3 字重或子集化；OFL LICENSE 放 `docs/licenses/` |

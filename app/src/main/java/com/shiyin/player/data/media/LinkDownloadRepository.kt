@@ -48,7 +48,15 @@ class LinkDownloadRepository(
             .build()
     }
 
-    suspend fun download(rawUrl: String, onProgress: (Int) -> Unit): DownloadResult =
+    /**
+     * [displayName] 由搜歌模式传入「歌名 - 歌手.mp3」；为空时按响应头 / URL 推导，
+     * 直链模式的行为保持不变。
+     */
+    suspend fun download(
+        rawUrl: String,
+        onProgress: (Int) -> Unit,
+        displayName: String? = null
+    ): DownloadResult =
         withContext(Dispatchers.IO) {
             val url = DownloadLink.normalize(rawUrl)
                 ?: return@withContext DownloadResult.Failure(DownloadError.INVALID_URL)
@@ -67,7 +75,7 @@ class LinkDownloadRepository(
                 call = client.newCall(request)
                 val response = call.execute()
                 try {
-                    consume(response, url, temp, onProgress)
+                    consume(response, url, temp, onProgress, displayName)
                 } finally {
                     response.close()
                 }
@@ -91,7 +99,8 @@ class LinkDownloadRepository(
         response: Response,
         url: String,
         temp: File,
-        onProgress: (Int) -> Unit
+        onProgress: (Int) -> Unit,
+        requestedName: String?
     ): DownloadResult {
         if (!response.isSuccessful) {
             return DownloadResult.Failure(
@@ -108,11 +117,12 @@ class LinkDownloadRepository(
             return DownloadResult.Failure(DownloadError.FILE_TOO_LARGE)
         }
 
-        val displayName = DownloadLink.fileName(
-            url,
-            contentType,
-            response.header("Content-Disposition")
-        )
+        val displayName = requestedName?.takeIf { it.isNotBlank() }
+            ?: DownloadLink.fileName(
+                url,
+                contentType,
+                response.header("Content-Disposition")
+            )
         val mime = DownloadLink.mediaMime(displayName, contentType)
             ?: return DownloadResult.Failure(DownloadError.UNSUPPORTED_MEDIA)
 

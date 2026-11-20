@@ -20,7 +20,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 enum class Glyph {
     Back, Close, Play, Pause, Next, Previous,
     Scan, Link, Trim, Extract, Music, Info, Search, Playlist,
-    Favorite, FavoriteFilled, Chevron
+    Favorite, FavoriteFilled, Chevron, Download
 }
 
 @Composable
@@ -196,6 +196,14 @@ private fun DrawScope.drawGlyph(glyph: Glyph, color: Color) {
         Glyph.Chevron -> {
             drawLine(color, Offset(w * 0.42f, h * 0.28f), Offset(w * 0.64f, h * 0.50f), line, StrokeCap.Round)
             drawLine(color, Offset(w * 0.64f, h * 0.50f), Offset(w * 0.42f, h * 0.72f), line, StrokeCap.Round)
+        }
+
+        Glyph.Download -> {
+            // 向下箭头 + 底部托盘，表示「保存入库」。
+            drawLine(color, Offset(w * 0.50f, h * 0.16f), Offset(w * 0.50f, h * 0.62f), line, StrokeCap.Round)
+            drawLine(color, Offset(w * 0.30f, h * 0.44f), Offset(w * 0.50f, h * 0.64f), line, StrokeCap.Round)
+            drawLine(color, Offset(w * 0.70f, h * 0.44f), Offset(w * 0.50f, h * 0.64f), line, StrokeCap.Round)
+            drawLine(color, Offset(w * 0.22f, h * 0.80f), Offset(w * 0.78f, h * 0.80f), line, StrokeCap.Round)
         }
     }
 }
