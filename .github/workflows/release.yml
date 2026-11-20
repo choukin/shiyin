@@ -1,0 +1,219 @@
+name: Release
+
+# 打 v* tag 即自动构建 APK/AAB、生成校验和并创建 GitHub Release。
+# 也可在 Actions 页面手动运行（默认只出构建产物，不建 Release）。
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '版本号（不带 v），例如 0.2.0；含 - 后缀会标记为预发布'
+        required: true
+        default: '0.1.0'
+      create_release:
+        description: '同时创建 GitHub Release（会生成同名 tag）'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: shiyin-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build & publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # versionCode 取提交总数，需要完整历史
+          fetch-depth: 0
+
+      - name: JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: SDK 许可与组件
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+          # 缺失时由 AGP 按 compileSdk 自动补齐；这里安装失败不阻塞
+          sdkmanager --install "platforms;android-37" "build-tools;36.0.0" > /dev/null || true
+
+      - name: 解析版本号
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${INPUT_VERSION#v}"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          VERSION_CODE="$(git rev-list --count HEAD)"
+          case "$VERSION" in
+            *-*) PRERELEASE=true ;;
+            *)   PRERELEASE=false ;;
+          esac
+          {
+            echo "version=$VERSION"
+            echo "version_code=$VERSION_CODE"
+            echo "prerelease=$PRERELEASE"
+          } >> "$GITHUB_OUTPUT"
+          echo "versionName=$VERSION  versionCode=$VERSION_CODE  prerelease=$PRERELEASE"
+
+      - name: 准备签名密钥
+        id: signing
+        env:
+          SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          KEYSTORE="$RUNNER_TEMP/signing/release.jks"
+          mkdir -p "$(dirname "$KEYSTORE")"
+
+          if [ -n "$SIGNING_KEYSTORE_BASE64" ] && [ -n "$SIGNING_STORE_PASSWORD" ] \
+             && [ -n "$SIGNING_KEY_ALIAS" ] && [ -n "$SIGNING_KEY_PASSWORD" ]; then
+            MODE=official
+            printf '%s' "$SIGNING_KEYSTORE_BASE64" | tr -d '\n' | base64 --decode > "$KEYSTORE"
+            STORE_PASSWORD="$SIGNING_STORE_PASSWORD"
+            KEY_ALIAS="$SIGNING_KEY_ALIAS"
+            KEY_PASSWORD="$SIGNING_KEY_PASSWORD"
+          else
+            # 未配置正式密钥：生成一次性 CI 密钥，包仍可安装但不可覆盖安装 / 不可上架。
+            # keytool 默认产出 PKCS12，它不支持 store/key 使用不同口令（会静默忽略 -keypass，
+            # 导致 AGP 解 key 报 "Given final block not properly padded"），故这里两个口令必须一致。
+            MODE=ci
+            STORE_PASSWORD="shiyin-ci-password"
+            KEY_ALIAS="shiyin-ci"
+            KEY_PASSWORD="shiyin-ci-password"
+            keytool -genkeypair -keystore "$KEYSTORE" -alias "$KEY_ALIAS" \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "$STORE_PASSWORD" -keypass "$KEY_PASSWORD" \
+              -dname "CN=Shiyin CI, OU=Dev, O=Shiyin, L=Beijing, ST=Beijing, C=CN"
+          fi
+
+          test -s "$KEYSTORE"
+          # Gradle 自动把 ORG_GRADLE_PROJECT_<name> 映射为 project property，
+          # 口令不出现在命令行里。
+          {
+            echo "ORG_GRADLE_PROJECT_SHIYIN_KEYSTORE=$KEYSTORE"
+            echo "ORG_GRADLE_PROJECT_SHIYIN_KEYSTORE_PASSWORD=$STORE_PASSWORD"
+            echo "ORG_GRADLE_PROJECT_SHIYIN_KEY_ALIAS=$KEY_ALIAS"
+            echo "ORG_GRADLE_PROJECT_SHIYIN_KEY_PASSWORD=$KEY_PASSWORD"
+          } >> "$GITHUB_ENV"
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "signing mode: $MODE"
+
+      - name: 单元测试
+        run: ./gradlew :app:testDebugUnitTest --no-daemon --stacktrace
+
+      - name: 构建 Release（APK + AAB）
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          VERSION_CODE: ${{ steps.version.outputs.version_code }}
+        run: |
+          ./gradlew :app:assembleRelease :app:bundleRelease --no-daemon --stacktrace \
+            -PSHIYIN_VERSION_NAME="$VERSION" \
+            -PSHIYIN_VERSION_CODE="$VERSION_CODE"
+
+      - name: 整理产物、校验和与 Release 正文
+        id: artifacts
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          VERSION_CODE: ${{ steps.version.outputs.version_code }}
+          SIGNING_MODE: ${{ steps.signing.outputs.mode }}
+        run: |
+          set -euo pipefail
+          STAGE="$RUNNER_TEMP/stage"
+          BODY="$RUNNER_TEMP/RELEASE_BODY.md"
+          mkdir -p "$STAGE"
+
+          if [ ! -f app/build/outputs/apk/release/app-release.apk ]; then
+            echo "::error::没有生成 app-release.apk（若产出的是 app-release-unsigned.apk，说明签名属性未注入）"
+            ls -la app/build/outputs/apk/release/
+            exit 1
+          fi
+          cp app/build/outputs/apk/release/app-release.apk "$STAGE/Shiyin-$VERSION.apk"
+          cp app/build/outputs/bundle/release/app-release.aab "$STAGE/Shiyin-$VERSION.aab"
+          (cd "$STAGE" && sha256sum Shiyin-*.apk Shiyin-*.aab > SHA256SUMS.txt)
+
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)"
+          if [ -n "$APKSIGNER" ]; then
+            "$APKSIGNER" verify --verbose "$STAGE/Shiyin-$VERSION.apk" > "$STAGE/signature.txt" 2>&1 || {
+              cat "$STAGE/signature.txt"; exit 1;
+            }
+            head -6 "$STAGE/signature.txt"
+            # apksigner 走 v2/v3 强校验路径时会把 v1 行显示为 false，
+            # 但 AGP 已写入 META-INF/MANIFEST.MF + CERT.SF/CERT.RSA（jarsigner 可验证）。
+            printf '\n# 注：v1 行显示 false 属 apksigner 的 v2/v3 校验路径行为，v1 实体以 META-INF 下 MANIFEST.MF / CERT.SF / CERT.RSA 为准。\n' >> "$STAGE/signature.txt"
+          fi
+
+          {
+            if [ "$SIGNING_MODE" = "ci" ]; then
+              echo "> ⚠️ **此包使用 CI 临时密钥签名，仅供测试**：每次构建密钥都不同，无法覆盖安装，也不能用于应用商店上架。请按 [docs/RELEASE.md](docs/RELEASE.md) 配置正式签名 Secrets 后重新发版。"
+              echo
+            fi
+            echo "### 构建信息"
+            echo
+            echo "| 项 | 值 |"
+            echo "|---|---|"
+            echo "| versionName | \`$VERSION\` |"
+            echo "| versionCode | \`$VERSION_CODE\` |"
+            echo "| commit | \`$GITHUB_SHA\` |"
+            echo "| 签名 | $([ "$SIGNING_MODE" = "official" ] && echo '正式密钥（v2/v3 全量校验 + v1 兼容）' || echo 'CI 临时密钥') |"
+            echo "| 适用系统 | Android 8.0+（minSdk 26，targetSdk 36） |"
+            echo
+            echo "### 产物"
+            echo
+            echo "- \`Shiyin-$VERSION.apk\`：可直接安装的整机包"
+            echo "- \`Shiyin-$VERSION.aab\`：应用商店上架用"
+            echo "- \`SHA256SUMS.txt\`：校验和"
+            echo
+            echo "MP3 导出依赖的 LAME 仅提供 arm64-v8a 库，x86 模拟器上该格式不可用；M4A / WAV 不受影响。"
+          } > "$BODY"
+
+          {
+            echo "stage=$STAGE"
+            echo "body=$BODY"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: shiyin-${{ steps.version.outputs.version }}
+          path: ${{ steps.artifacts.outputs.stage }}/*
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: 创建 GitHub Release
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.create_release == true)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && format('v{0}', steps.version.outputs.version) || github.ref_name }}
+          name: 拾音 ${{ steps.version.outputs.version }}
+          body_path: ${{ steps.artifacts.outputs.body }}
+          files: |
+            ${{ steps.artifacts.outputs.stage }}/*.apk
+            ${{ steps.artifacts.outputs.stage }}/*.aab
+            ${{ steps.artifacts.outputs.stage }}/SHA256SUMS.txt
+          prerelease: ${{ steps.version.outputs.prerelease == 'true' }}
+          generate_release_notes: true

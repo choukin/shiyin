@@ -5,6 +5,22 @@ plugins {
     alias(libs.plugins.compose.compiler)
 }
 
+// ---------------------------------------------------------------------------
+// 发版注入：仓库内不保存任何 keystore / 口令。
+// 本地：~/.gradle/gradle.properties 写 SHIYIN_* 或用 -P 传；
+// CI：GitHub Actions 通过 ORG_GRADLE_PROJECT_SHIYIN_* 环境变量注入（Gradle 自动映射为属性）。
+// 四项齐全才创建 release signingConfig；缺任一项时 release 为未签名包，
+// 不影响本地 debug 构建。详见 docs/RELEASE.md。
+// ---------------------------------------------------------------------------
+fun releaseProp(name: String): String? = (project.findProperty(name) as String?)?.takeIf { it.isNotBlank() }
+
+val releaseStorePassword = releaseProp("SHIYIN_KEYSTORE_PASSWORD")
+val releaseKeyAlias = releaseProp("SHIYIN_KEY_ALIAS")
+val releaseKeyPassword = releaseProp("SHIYIN_KEY_PASSWORD")
+val releaseKeystore = releaseProp("SHIYIN_KEYSTORE")?.let { rootProject.file(it) }
+val hasReleaseSigning = releaseKeystore?.isFile == true &&
+    releaseStorePassword != null && releaseKeyAlias != null && releaseKeyPassword != null
+
 android {
     namespace = "com.shiyin.player"
     compileSdk = 37
@@ -14,8 +30,9 @@ android {
         minSdk = 26
         // Play 自 2026-08-31 起要求 targetSdk >= 36；保守取 36，Android 17 行为变更留待兼容测试后再升 37。
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        // 本地默认 1 / 0.1.0；CI 发版时由 tag 与提交数注入，保证 versionCode 单调递增。
+        versionCode = releaseProp("SHIYIN_VERSION_CODE")?.toIntOrNull() ?: 1
+        versionName = releaseProp("SHIYIN_VERSION_NAME") ?: "0.1.0"
     }
 
     // AGP 9 默认 debug 包只启用 v2 签名（v1/v3 关闭）。部分国产 ROM（MIUI/HyperOS）
@@ -29,6 +46,18 @@ android {
             enableV2Signing = true
             enableV3Signing = true
         }
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = releaseKeystore
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+                // 与 debug 保持一致：v1 兼容国产 ROM 安装器，v2/v3 覆盖现代全量校验。
+                enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = true
+            }
+        }
     }
 
     buildTypes {
@@ -36,6 +65,9 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
         release {
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

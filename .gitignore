@@ -1,5 +1,6 @@
 *.iml
 .gradle/
+.kotlin/
 /local.properties
 /.idea/
 .DS_Store
@@ -15,3 +16,9 @@ local.properties
 preview/
 __pycache__/
 *.pyc
+
+# 签名密钥：任何 keystore / 口令文件都不入库，CI 走 GitHub Secrets 注入
+*.jks
+*.keystore
+keystore.properties
+signing/
